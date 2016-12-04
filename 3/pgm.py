@@ -8,9 +8,14 @@ def isTri(nums):
         return True
     return False
 
-n = 0
+grid = []
 for line in sys.stdin.readlines():
     nums = map(int, line.strip().split())
+    grid.append(nums)
+
+n = 0
+for line in grid:
+    nums = line[:]
     if isTri(nums):
         n += 1
 
