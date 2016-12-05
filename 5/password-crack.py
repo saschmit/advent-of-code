@@ -2,17 +2,23 @@
 
 from hashlib import md5
 
-def mine(key, count=5):
+def crack(key, count=5):
+    print "cracking key with %s" % key
     n = 0
-    password = ""
-    while len(password) < 8:
+    password = ["_"] * 8
+    while "_" in password:
         digest = md5(key + str(n)).hexdigest()
         if digest[0:count] == "0" * count:
-            password += digest[count]
+            pos = digest[count]
+            if pos in "01234567":
+                pos = int(pos)
+                if password[pos] == '_':
+                    password[pos] = digest[count+1]
+                    print "".join(password)
         n += 1
 
-    return password
+    return "".join(password)
 
-assert mine("abc") == "18f47a30"
+assert crack("abc") == "05ace8e3"
 
-print mine("wtnhxymk")
+print crack("wtnhxymk")
