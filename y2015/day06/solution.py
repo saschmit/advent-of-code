@@ -2,16 +2,16 @@
 
 import sys
 
-lights = [[False for i in xrange(1000)] for j in xrange(1000)]
+lights = [[0 for i in xrange(1000)] for j in xrange(1000)]
 
 def on(bank, x, y):
-    bank[x][y] = True
+    bank[x][y] += 1
 
 def off(bank, x, y):
-    bank[x][y] = False
+    bank[x][y] = max(0, bank[x][y] - 1)
 
 def flip(bank, x, y):
-    bank[x][y] = not bank[x][y]
+    bank[x][y] += 2
 
 def mod(bank, start, end, action):
     for x in xrange(start[0], end[0]+1):
@@ -43,7 +43,6 @@ for line in sys.stdin.readlines():
 count = 0
 for x in xrange(0, len(lights)):
     for y in xrange(0, len(lights[x])):
-        if lights[x][y]:
-            count += 1
+        count += lights[x][y]
 
 print count
