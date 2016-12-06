@@ -18,11 +18,11 @@ for c in xrange(len(line)):
         else:
             freq[ch] += 1
 
-    max_count = 0
+    min_count = len(lines)
     common = ""
     for ch in freq:
-        if freq[ch] > max_count:
-            max_count = freq[ch]
+        if freq[ch] < min_count:
+            min_count = freq[ch]
             common = ch
 
     output += common
