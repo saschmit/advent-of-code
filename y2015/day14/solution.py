@@ -16,36 +16,51 @@ class Reindeer:
             'rest': { 'speed': 0, 'time': int(rest_time) },
         }
 
+        self.__state = 'rest'
+        self.distance = 0
+
+        self.__next_state()
+
     def __next_state(self):
         next_state = { 'fly': 'rest', 'rest': 'fly' }
         self.__state = next_state[self.__state]
         param = self.__params[self.__state]
-        return param['speed'], param['time']
+        self.__speed = param['speed']
+        self.__time_left = param['time']
 
-    def race(self, race_time):
-        distance = 0
-        self.__state = 'rest'
+    def race(self):
+        if not self.__time_left:
+            self.__next_state()
 
-        while race_time:
-            speed, state_duration = self.__next_state()
-
-            timespan = min(race_time, state_duration)
-            distance += timespan * speed
-            race_time -= timespan
-
-        return distance
+        self.distance += 1 * self.__speed
+        self.__time_left -= 1
 
 flock = []
 for line in sys.stdin.readlines():
     flock.append(Reindeer(line))
 
 race_duration = int(sys.argv[1])
-max_dist = 0
-for reindeer in flock:
-    dist = reindeer.race(race_duration)
-    print "%s has gone %d km" % (reindeer.name, dist)
-    if dist > max_dist:
-        winner = reindeer.name
-        max_dist = dist
+score = {}
+for r in flock:
+    score[r.name] = 0
 
-print "%s wins with %d km" % (winner, max_dist)
+winner = None
+for i in xrange(1, race_duration+1):
+    max_dist = 0
+    for reindeer in flock:
+        reindeer.race()
+        if reindeer.distance > max_dist:
+            winner = reindeer.name
+            max_dist = reindeer.distance
+
+    print "%d: %s takes a point" % (i, winner)
+    score[winner] += 1
+
+winner = None
+max_score = 0
+for r in score:
+    print "%s has a score of %d points" % (r, score[r])
+    if score[r] > max_score:
+        max_score = score[r]
+        winner = r
+print "%s wins with %d points" % (winner, max_score)
