@@ -50,8 +50,10 @@ for n in xrange(fact(len(larder), 100) + 1):
             subscore.append(accum[i] * larder[i].props[p])
         score *= max(0, sum(subscore))
     #print score, max_score
-        
-    if score > max_score:
+    cal = 0
+    for i in xrange(len(larder)):
+        cal += accum[i] * larder[i].props['calories']
+    if cal == 500 and score > max_score:
         max_score = score
 
 print max_score
