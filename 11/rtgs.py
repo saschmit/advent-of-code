@@ -6,18 +6,22 @@ from pprint import pprint
 # xM & yG, if x != y, then x will fry unless xG is also on the same level
 # E can only move with 1 or 2 items
 # E can only move 1 floor at a time
-
-if True:
+import sys
+case = int(sys.argv[1])
+if case == 0:
+    init_state = set(['1:E', '1:HM', '1:LM', '2:HG', '3:LG' ])
+    goal = set(['4:E', '4:HM', '4:LM', '4:HG', '4:LG' ])
+elif case == 1:
     init_state = set(['1:E', '1:SG', '1:SM', '1:PG', '1:PM', '2:TG', '2:RG', '2:RM', '2:CG', '2:CM', '3:TM'])
     goal = set(['4:E', '4:SG', '4:SM', '4:PG', '4:PM', '4:TG', '4:RG', '4:RM', '4:CG', '4:CM', '4:TM'])
-
+elif case == 2:
     init_state = set(['1:E', '1:SG', '1:SM', '1:PG', '1:PM', '2:TG', '2:RG', '2:RM', '2:CG', '2:CM', '3:TM','1:EG','1:EM','1:DG','1:DM'])
     goal = set(['4:E', '4:SG', '4:SM', '4:PG', '4:PM', '4:TG', '4:RG', '4:RM', '4:CG', '4:CM', '4:TM','4:EG','4:EM','4:DG','4:DM'])
 else:
-    init_state = set(['1:E', '1:HM', '1:LM', '2:HG', '3:LG' ])
-    goal = set(['4:E', '4:HM', '4:LM', '4:HG', '4:LG' ])
+    raise ValueError
 
 all_states = {}
+active_floors = ['1', '2', '3', '4']
 
 pick_two = {}
 for k in xrange(1, len(goal)):
@@ -34,6 +38,18 @@ def key(state):
         if state[i-1][:-1] == state[i][:-1]:
             state[i-1] = state[i-1][:2] + 'x' + state[i-1][-1]
             state[i] = state[i][:2] + 'x' + state[i][-1]
+    count = 0
+    m = {}
+    for i in xrange(len(state)):
+        if state[i][-1] == 'E':
+            continue
+        if state[i][2] not in m:
+            m[state[i][2]] = count
+            count += 1
+    for i in xrange(len(state)):
+        if state[i][-1] == 'E':
+            continue
+        state[i] = state[i][:2] + chr(ord('a') + m[state[i][2]]) + state[i][-1]
     return ",".join(sorted(state))
 
 def legal_state(state):
@@ -65,13 +81,15 @@ class Dupe(RuntimeError):
 class Illegal(RuntimeError):
     pass
 
+class StopSearch(RuntimeError):
+    def __init__(self, gen, closed_floors):
+        self.gen = gen
+        self.closed_floors = closed_floors
+
 class Node:
     def __init__(self, parent, state, gen):
         if not legal_state(state):
             raise Illegal()
-        if False and key(state) == key(goal):
-            print gen
-            exit(0)
         self.state = state
         self.parent = parent
         self.gen = gen
@@ -85,6 +103,18 @@ class Node:
             raise Dupe()
         else:
             all_states[k] = self
+
+        if k == key(goal):
+            raise StopSearch(gen, None)
+        else:
+            closed = []
+            for fl in map(lambda f: str(active_floors[f]), xrange(len(active_floors))):
+                if not filter(lambda x: fl in x, state):
+                    closed.append(fl)
+                else:
+                    break
+            if closed:
+                raise StopSearch(gen, closed)
 
     def search(self):
         if self.done:
@@ -113,11 +143,7 @@ class Node:
             #print sorted(other_floors)
 
             for choices in pick_two[len(floor)]:
-                if offset == -1 and choices[0] != choices[1] and len(floor) > 1:
-                    continue
                 c = floor[choices[0]], floor[choices[1]]
-                if offset == -1 and c[0] != c[1] and c[0][2] == c[1][2]:
-                    continue
                 new_c = map(lambda x: next_floor_num + x[1:], c)
                 new_floor = set(floor) - set(c)
                 new_next_floor = set(next_floor) | set(new_c)
@@ -143,7 +169,16 @@ while goal_key not in all_states and filter(lambda s: not all_states[s].done, al
     if len(all_states) - last_n > 1000:
         last_n = len(all_states)
         print last_n, len(search)
-    map(lambda s: all_states[s].search(), search)
+    try:
+        map(lambda s: all_states[s].search(), search)
+    except StopSearch as ss:
+        if ss.closed_floors is not None:
+            for closed in ss.closed_floors:
+                print "Floor %s now closed. Pruning states" % closed
+                del active_floors[0]
+                prune = filter(lambda s: closed in s, all_states)
+                for s in prune:
+                    del all_states[s]
 
 assert goal_key in all_states
 print all_states[goal_key].gen
@@ -153,5 +188,4 @@ def d(n):
     print_state(n.state)
     print
 
-pprint(all_states)
 d(all_states[goal_key])
