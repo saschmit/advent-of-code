@@ -54,8 +54,15 @@ def count_lights(grid):
                 count += 1
     return count
 
-for i in xrange(steps):
-    lights = live(lights)
+def stuck(grid):
+    grid[0] = ON + grid[0][1:-1] + ON
+    grid[-1] = ON + grid[-1][1:-1] + ON
 
-#print_lights(lights)
+for i in xrange(steps):
+    stuck(lights)
+    lights = live(lights)
+    stuck(lights)
+    print_lights(lights)
+
+print_lights(lights)
 print count_lights(lights)
