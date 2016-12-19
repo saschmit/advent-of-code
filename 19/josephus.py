@@ -6,56 +6,19 @@ n = 3001330
 import sys
 import math
 
-class Node:
-    def __init__(self, val):
-        self.val = val
-        self.nxt = None
-
-head = Node(1)
-tail = head
-for i in xrange(2, n+1):
-    new = Node(tail.val+1)
-    tail.nxt = new
-    tail = new
-
-assert tail.val == n
-
-tail.nxt = head
-count = n
-
-cursor = head
-while count != 1:
-    kill = cursor
-    for i in xrange(count//2):
-        kill = head.nxt
-
-        kill.nxt = kill.nxt.nxt
-    cursor = cursor.nxt
-    count -= 1
-    if count % 10 == 0:
-        print count
-
-print cursor.val
-exit(0)
-
 if True:
     def find_next(total, offset):
         return ((total // 2) + offset) % total
 
-    for n in xrange(1, 101):
-        elves = range(1, n+1)
+    elves = range(1, n+1)
 
-        #print elves
-        count = 0
-        while len(elves) != 1:
-            if len(elves) % 10 == 0:
-                print len(elves)
-            new_count = (count + 1) % len(elves)
-            del elves[find_next(len(elves), count)]
-            count = new_count
-            #print elves, count
+    count = 0
+    while len(elves) != 1:
+        new_count = (count + 1) % len(elves)
+        del elves[find_next(len(elves), count)]
+        count = new_count
 
-        print n, elves
+    print n, elves
 else:
     import math
     import sys
