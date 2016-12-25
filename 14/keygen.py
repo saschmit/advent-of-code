@@ -11,7 +11,10 @@ all_triples = {}
 keys = []
 
 def genrand(n):
-    return md5(salt + str(n)).hexdigest()
+    h = md5(salt + str(n)).hexdigest()
+    for i in xrange(2016):
+        h = md5(h).hexdigest()
+    return h
 
 def iskey(n):
     candidate = None
