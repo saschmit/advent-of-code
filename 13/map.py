@@ -25,11 +25,11 @@ def dist(a, b):
 
     return (ax - bx)**2 + (ay - by)**2
 
-def print_map(state):
-    trail = state.trail
-    current = state.pos
-    X = max(map(lambda p: p[0], trail + [current]))
-    Y = max(map(lambda p: p[1], trail + [current]))
+def print_map(all_pos):
+    if not all_pos:
+        return
+    X = max(map(lambda p: p[0], all_pos.keys()))
+    Y = max(map(lambda p: p[1], all_pos.keys()))
 
     print "    " + "0123456789" * ((X+2)//10) + "0123456789"[:(X+2) % 10]
     for y in xrange(Y+2):
@@ -37,10 +37,8 @@ def print_map(state):
         for x in xrange(X+2):
             if iswall(x, y):
                 l += "#"
-            elif (x, y) == current:
+            elif (x, y) in all_pos:
                 l += "X"
-            elif (x, y) in trail:
-                l += "O"
             else:
                 l += "."
         print l
@@ -74,29 +72,22 @@ current = candidates[0]
 winners = []
 
 while candidates:
-    candidates.sort(lambda a, b: cmp(dist(a.pos, target), dist(b.pos, target)) or cmp(len(a.trail), len(b.trail)))
-    #print "Candidates:"
-    #pprint(candidates)
-    #print
-    #print "Candidates distances: %s" % map(lambda q: dist(q, target), candidates)
-
     current = candidates.pop(0)
 
     print "currently at %s" % current
-    #print_map(current)
+    print_map(all_pos)
 
-    if current.pos == target:
-        print "found the target! len = %d" % len(current.trail)
-        winners.append(current)
+    #if current.pos == target:
+    #    print "found the target! len = %d" % len(current.trail)
+    #    winners.append(current)
+    #    continue
+    if len(current.trail) > 50:
         continue
 
     if current.pos in all_pos:
-        print "I've been here before!"
         if len(all_pos[current.pos].trail) > len(current.trail):
-            print "But this way is shorter"
             all_pos[current.pos] = current
     else:
-        print "Breaking new ground"
         all_pos[current.pos] = current
 
     for offset in ((0, -1), (0, 1), (1, 0), (-1, 0)):
@@ -106,15 +97,13 @@ while candidates:
         if iswall(cand[0], cand[1]):
             print "NO: %s is a wall" % (cand,)
             continue
-        elif cand in all_pos and len(all_pos[cand].trail) <= len(current.trail):
-            print "NO: %s; %d has been seen before (or via a longer route)" % (cand, len(all_pos[cand].trail))
+        elif cand in all_pos:
+            print "NO: %s has been seen before" % (cand,)
             continue
         else:
             print "MAYBE: %s queued" % (cand,)
             candidates.append(State(cand, trail))
 
-shortest_winner = min(map(lambda x: len(x.trail), winners))
-for winner in winners:
-    if len(winner.trail) == shortest_winner:
-        print len(winner.trail)
-        print_map(winner)
+print(len(all_pos))
+
+print(all_pos[(16,23)])
