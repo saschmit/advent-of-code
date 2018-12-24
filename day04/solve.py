@@ -71,15 +71,32 @@ pprint(sleepiness)
 print("{} is the worst guard at {} minutes asleep".format(worst, most))
 pprint(charts[worst])
 
-summation = []
-for minute in range(0, 60):
-    total = 0
-    for chart in charts[worst]:
-        if chart[minute] == '#':
-            total += 1
-    summation.append(total)
+sums = {}
+for guard in charts:
+    summation = []
+    for minute in range(0, 60):
+        total = 0
+        for chart in charts[guard]:
+            if chart[minute] == '#':
+                total += 1
+        summation.append(total)
+    sums[guard] = summation
 
-worst_min = summation.index(max(summation))
+worst_min = sums[worst].index(max(sums[worst]))
 print("{}'s worst minute is 00:{:02d}".format(worst, worst_min))
 
 print("Part 1: {}".format(worst * worst_min))
+
+worst_worst_count = -1
+worst_worst_min = None
+worst_worst = None
+for minute in range(0, 60):
+    for guard in sums:
+        if sums[guard][minute] > worst_worst_count:
+            worst_worst_count = sums[guard][minute]
+            worst_worst_min = minute
+            worst_worst = guard
+
+print("{} is the worst, with the worst minute of 00:{:02d}".format(worst_worst, worst_worst_min))
+
+print("Part 2: {}".format(worst_worst * worst_worst_min))
