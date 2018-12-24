@@ -151,10 +151,10 @@ impl Claim {
         })
     }
 
-    pub fn mark(&self, fabric : &mut [[usize; 1000]; 1000]) {
+    pub fn mark(&self, fabric : &mut Vec<Vec<Vec<usize>>>) {
         for x in self.x .. self.x + self.w {
             for y in self.y .. self.y + self.h {
-                fabric[x][y] += 1;
+                fabric[x][y].push(self.n);
             }
         }
     }
@@ -164,7 +164,15 @@ fn main() {
     let buff = String::from_utf8(std::fs::read("input").unwrap()).unwrap();
     let lines : Vec<&str> = buff.lines().collect();
 
-    let mut fabric : [[usize; 1000]; 1000] = [[0; 1000]; 1000];
+    let mut fabric : Vec<Vec<Vec<usize>>> = Vec::new();
+    for x in 0..1000 {
+        let x_axis : Vec<Vec<usize>> = Vec::new();
+        fabric.push(x_axis);
+        for _ in 0..1000 {
+            let y_axis : Vec<usize> = Vec::new();
+            fabric[x].push(y_axis);
+        }
+    }
     let mut claims = Vec::<Claim>::new();
     for line in &lines {
         claims.push(Claim::parse(line).unwrap());
@@ -177,7 +185,7 @@ fn main() {
     let mut count = 0;
     for x in 0..1000 {
         for y in 0..1000 {
-            if fabric[x][y] > 1 {
+            if fabric[x][y].len() > 1 {
                 count += 1;
             }
         }
