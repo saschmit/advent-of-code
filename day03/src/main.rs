@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 #[derive(Debug)]
 struct Claim {
     n : usize,
@@ -178,18 +180,32 @@ fn main() {
         claims.push(Claim::parse(line).unwrap());
     }
 
+    let mut all = HashSet::new();
     for claim in claims {
         claim.mark(&mut fabric);
+        all.insert(claim.n);
     }
 
     let mut count = 0;
+    let mut overlaps = HashSet::new();
     for x in 0..1000 {
         for y in 0..1000 {
-            if fabric[x][y].len() > 1 {
-                count += 1;
+            match fabric[x][y].len() {
+                0..=1 => {
+                },
+                _ => {
+                    for id in &fabric[x][y] {
+                        overlaps.insert(*id);
+                    }
+                    count += 1;
+                },
             }
         }
     }
 
     println!("multi-claim sq. in.: {}", count);
+    let uniques = all.difference(&overlaps);
+    for item in uniques {
+        println!("{}", item);
+    }
 }
