@@ -2,15 +2,18 @@
 struct Location {
     id: Option<usize>,
     dist: usize,
+    metric: usize,
 }
 
 #[derive(Debug)]
 struct Map {
     dimensions: (usize, usize),
     offset: (usize, usize),
-    sites: Vec<(usize, usize)>,
+    regions: Vec<(usize, usize)>,
     grid: Vec<Vec<Option<Location>>>,
 }
+
+const METRIC_BOUNDARY : usize = 10000;
 
 impl Map {
     pub fn load(file : &str) -> Map {
@@ -19,12 +22,12 @@ impl Map {
         let mut m = Map {
             dimensions: (0, 0),
             offset: (0, 0),
-            sites: Vec::new(),
+            regions: Vec::new(),
             grid: Vec::new(),
         };
 
         m.parse(buff.lines());
-        m.normalize_sites();
+        m.normalize_regions();
         m.init_grid();
         m.color();
 
@@ -37,24 +40,24 @@ impl Map {
             assert_eq!(coords.len(), 2);
             let x = usize::from_str_radix(coords[0], 10).unwrap();
             let y = usize::from_str_radix(coords[1], 10).unwrap();
-            self.sites.push((y, x));
+            self.regions.push((x, y));
         }
     }
 
-    fn normalize_sites(&mut self) {
-        assert_ne!(self.sites.len(), 0);
+    fn normalize_regions(&mut self) {
+        assert_ne!(self.regions.len(), 0);
         let mut min_x = std::usize::MAX;
         let mut min_y = std::usize::MAX;
         let mut max_x = 0;
         let mut max_y = 0;
-        for (x, y) in &self.sites {
+        for (x, y) in &self.regions {
             min_x = std::cmp::min(min_x, *x);
             min_y = std::cmp::min(min_y, *y);
             max_x = std::cmp::max(max_x, *x);
             max_y = std::cmp::max(max_y, *y);
         }
 
-        for (x, y) in &mut self.sites {
+        for (x, y) in &mut self.regions {
             *x -= min_x;
             *y -= min_y;
         }
@@ -63,7 +66,7 @@ impl Map {
     }
 
     fn init_grid(&mut self) {
-        assert_ne!(self.sites.len(), 0);
+        assert_ne!(self.regions.len(), 0);
         assert_ne!(self.dimensions.0, 0);
         assert_ne!(self.dimensions.1, 0);
         for x in 0..self.dimensions.0 {
@@ -88,18 +91,27 @@ impl Map {
 
         for x in 0..self.dimensions.0 {
             for y in 0..self.dimensions.1 {
-                for (site_id, site_coord) in self.sites.iter().enumerate() {
-                    let dist = Self::calc_dist(*site_coord, (x, y));
+                let mut sum = 0;
+                for (site_id, site_coord) in self.regions.iter().enumerate() {
+                    let dist = Self::calc_dist((x, y), *site_coord);
+                    sum += dist;
                     self.grid[x][y] = match &self.grid[x][y] {
-                        None => Some(Location { id: Some(site_id), dist: dist }),
+                        None => Some(Location { id: Some(site_id), dist: dist, metric: 0 }),
                         Some(loc) => Some(Location {
                             id: if loc.dist == dist { None }
                                 else if loc.dist > dist { Some(site_id) }
                                 else { loc.id },
                             dist: if loc.dist > dist { dist } else { loc.dist },
+                            metric: 0,
                         }),
                     };
                 }
+                match &mut self.grid[x][y] {
+                    None => unreachable!(),
+                    Some(loc) => {
+                        loc.metric = sum;
+                    },
+                };
             }
         }
     }
@@ -145,21 +157,48 @@ impl Map {
         }
         max_area
     }
+
+    pub fn find_safe_region_area(&self) -> usize {
+        let mut safe_region_area = 0;
+        for x in 0..self.dimensions.0 {
+            for y in 0..self.dimensions.1 {
+                match &self.grid[x][y] {
+                    None => (),
+                    Some(cell) => {
+                        if cell.metric < METRIC_BOUNDARY {
+                            safe_region_area += 1;
+                        }
+                    }
+                }
+            }
+        }
+        safe_region_area
+    }
 }
 
 impl std::fmt::Display for Map {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let mut out = String::new();
-        for x in 0..self.dimensions.0 {
-            for y in 0..self.dimensions.1 {
+        for y in 0..self.dimensions.1 {
+            for x in 0..self.dimensions.0 {
                 match &self.grid[x][y] {
                     None => out.push('.'),
                     Some(cell) => {
+                        out.push('\x1b');
+                        out.push('[');
+                        out.push('3');
+                        out.push(if cell.metric < METRIC_BOUNDARY { '1' } else { '7' });
+                        out.push('m');
                         match cell.id {
                             None => out.push('.'),
                             Some(id) => out += &String::from_utf8(vec!(
-                                if cell.dist == 0 { b'A' } else { b'a' } + (id % 26) as u8)).unwrap(),
+                                if cell.dist == 0 { b'A' } else { b'a' } + (id % 26) as u8,
+                            )).unwrap(),
                         }
+                        out.push('\x1b');
+                        out.push('[');
+                        out.push('0');
+                        out.push('m');
                     }
                 }
             }
@@ -171,5 +210,7 @@ impl std::fmt::Display for Map {
 
 fn main() {
     let map = Map::load(&std::env::args().nth(1).unwrap());
+    println!("{}", map);
     println!("Largest area: {}", map.find_largest_area());
+    println!("Safe region area: {}", map.find_safe_region_area());
 }
