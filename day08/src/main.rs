@@ -30,6 +30,19 @@ fn dfs_sum(top : &Node) -> usize {
         |acc, x| acc + dfs_sum(x))
 }
 
+fn get_value(top : &Node) -> usize {
+    top.metadata.iter().fold(0, |acc, x| acc +
+        if top.children.len() == 0 {
+            *x
+        } else {
+            match top.children.get(*x-1) {
+                None => 0,
+                Some(node) => get_value(node),
+            }
+        }
+    )
+}
+
 fn main() {
     let file = std::env::args().nth(1).unwrap();
     let buff = String::from_utf8(std::fs::read(file).unwrap()).unwrap();
@@ -43,4 +56,5 @@ fn main() {
     assert_eq!(consumed, nums.len());
 
     println!("Sum of metadata: {}", dfs_sum(&tree));
+    println!("Value: {}", get_value(&tree));
 }
