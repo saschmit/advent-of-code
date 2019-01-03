@@ -104,10 +104,29 @@ fn main() {
 
     let mut game = Game::new(num_players);
 
-    //eprintln!("{}", game);
-    for _ in 0..last_marble {
+    let debug = false;
+    let progress = true;
+    assert!(!(debug & progress));
+
+    if debug {
+        eprintln!("{}", game);
+    }
+    let mut last = 0;
+    if progress {
+        eprint!("0%\r");
+    }
+    for i in 0..last_marble {
         game.add_marble();
-        //eprintln!("{}", game);
+        let pct = i * 100 / last_marble;
+        if pct != last {
+            if progress {
+                eprint!("{}%\r", pct);
+            }
+            last = pct;
+        }
+        if debug {
+            eprintln!("{}", game);
+        }
     }
     let high_score = game.get_high_score();
     println!("{} players; last marble is worth {} points: high score is {}",
