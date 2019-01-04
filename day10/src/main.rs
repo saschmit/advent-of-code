@@ -92,6 +92,33 @@ fn main() {
         vecs.push(Vector::from_line(line));
     }
 
+    let mut min_area = std::usize::MAX;
+    let mut t = 0i32;
+    let t = loop {
+        let (height, width, _, _) = calc_geometry(&vecs);
+        let area = height * width;
+
+        if area > min_area {
+            // back up 1 second from where we were
+            for mut vec in &mut vecs {
+                vec.x -= vec.dx;
+                vec.y -= vec.dy;
+            }
+
+            break t - 1;
+        }
+
+        min_area = std::cmp::min(min_area, area);
+
+        t += 1;
+        assert_ne!(t, std::i32::MAX);
+
+        for mut vec in &mut vecs {
+            vec.x += vec.dx;
+            vec.y += vec.dy;
+        }
+    };
+
     let (height, width, min_top, min_left) = calc_geometry(&vecs);
 
     // Normalize coordinates
@@ -100,21 +127,15 @@ fn main() {
         vec.y -= min_top;
     }
 
-    for t in 0..5 {
-        let mut sky = Sky::new(height, width);
-        for vec in &vecs {
-            if ! (vec.y < 0 || vec.y >= height as i32 || vec.x < 0 || vec.x >= width as i32) {
-                sky.sky[vec.y as usize][vec.x as usize] = '#' as u8;
-            }
-        }
-
-        println!("t = {} s", t);
-        println!("{}", sky);
-        println!("");
-
-        for mut vec in &mut vecs {
-            vec.x += vec.dx;
-            vec.y += vec.dy;
+    let mut sky = Sky::new(height, width);
+    for vec in &vecs {
+        if ! (vec.y < 0 || vec.y >= height as i32 || vec.x < 0 || vec.x >= width as i32) {
+            sky.sky[vec.y as usize][vec.x as usize] = '#' as u8;
         }
     }
+
+    println!("t = {} s", t);
+    println!("{}", sky);
+    println!("");
+
 }
