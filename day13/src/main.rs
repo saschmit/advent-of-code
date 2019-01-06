@@ -72,10 +72,14 @@ struct Mine {
     tick : usize,
 }
 
-#[derive(Debug)]
 enum PlaceResult {
     Safe,
     Crash(Pos),
+}
+
+enum Event {
+    Crash,
+    LastCart,
 }
 
 impl Mine {
@@ -229,7 +233,7 @@ impl Mine {
         }
     }
 
-    pub fn run_to_crash(&mut self) -> Pos {
+    pub fn run_until(&mut self, event : Event) -> Pos {
         'frame: loop {
             self.tick += 1;
             for y in 0..self.height {
@@ -249,7 +253,14 @@ impl Mine {
                                 };
                                 match self.place(pos, cart) {
                                     PlaceResult::Safe => (),
-                                    PlaceResult::Crash(pos) => break 'frame pos,
+                                    PlaceResult::Crash(pos) => {
+                                        match event {
+                                            Event::Crash => break 'frame pos,
+                                            Event::LastCart => {
+                                                self.lift(&pos);
+                                            },
+                                        };
+                                    },
                                 }
                             } else {
                                 assert_eq!(self.tick, cart.last_moved_on_tick);
@@ -258,7 +269,20 @@ impl Mine {
                     }
                 }
             }
-            println!("{}", self);
+            if let Event::Crash = event {
+                println!("{}", self);
+            }
+            if self.carts.len() == 1 {
+                for (pos, _) in &self.carts {
+                    break 'frame Pos {
+                        x: pos.x,
+                        y: pos.y,
+                    };
+                }
+            }
+            else if self.carts.is_empty() {
+                panic!("No carts remain");
+            }
         }
     }
 }
@@ -275,10 +299,21 @@ impl std::fmt::Display for Mine {
 
 fn main() {
     let filename = std::env::args().nth(1).unwrap();
+    let part = match &std::env::args().nth(2).unwrap()[..] {
+        "1" => 1,
+        "2" => 2,
+        _ => panic!("Invalid argument"),
+    };
     let buff = std::fs::read(filename).unwrap();
     let mut mine = Mine::new(buff);
-    println!("{}", mine);
-    let crash_pos = mine.run_to_crash();
-    println!("{}", mine);
-    println!("Crash position = {}", crash_pos);
+    if part == 1 {
+        println!("{}", mine);
+        let crash_pos = mine.run_until(Event::Crash);
+        println!("{}", mine);
+        println!("Crash position = {}", crash_pos);
+    } else {
+        let last_cart_pos = mine.run_until(Event::LastCart);
+        println!("{}", mine);
+        println!("Last cart position = {}", last_cart_pos);
+    }
 }
