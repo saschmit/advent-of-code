@@ -40,6 +40,22 @@ impl RecipeBoard {
         }
         out
     }
+
+    pub fn get_n_before(&mut self, seq : &[usize]) -> usize {
+        let mut n = 0;
+        'outer: loop {
+            while self.scores.len() < n + seq.len() {
+                self.add_round();
+            }
+            for i in 0..seq.len() {
+                if self.scores[n + i] != seq[i] {
+                    n += 1;
+                    continue 'outer;
+                }
+            }
+            break 'outer n;
+        }
+    }
 }
 
 impl std::fmt::Display for RecipeBoard {
@@ -76,4 +92,11 @@ fn main() {
     assert_eq!(5941429882, board.get_10_after(2018));
 
     println!("Part 1: {:010}", board.get_10_after(409551));
+
+    assert_eq!(9, board.get_n_before(&[5,1,5,8,9]));
+    assert_eq!(5, board.get_n_before(&[0,1,2,4,5]));
+    assert_eq!(18, board.get_n_before(&[9,2,5,1,0]));
+    assert_eq!(2018, board.get_n_before(&[5,9,4,1,4]));
+
+    println!("Part 2: {}", board.get_n_before(&[4,0,9,5,5,1]));
 }
