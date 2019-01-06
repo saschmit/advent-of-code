@@ -2,7 +2,7 @@
 struct Pots {
     state : Vec<bool>,
     transforms : [bool; 32],
-    zero_offset : usize,
+    zero_offset : isize,
     gen : usize,
 }
 
@@ -86,7 +86,7 @@ impl Pots {
 
     pub fn generate(&mut self) {
         let mut new_state = Vec::with_capacity(self.state.len()+4);
-        let mut zero_shift = 0;
+        let mut zero_shift : isize = 0;
         for center in -2 .. self.state.len() as isize + 2 {
             let mut bitmap : usize = 0;
             for offset in -2..=2 {
@@ -98,7 +98,7 @@ impl Pots {
             let next = self.transforms[bitmap];
             if center < 0 && zero_shift == 0 {
                 if next {
-                    zero_shift = (-center) as usize;
+                    zero_shift = -center;
                     new_state.push(next);
                 }
             } else {
@@ -109,9 +109,14 @@ impl Pots {
         while ! new_state[new_state.len() - 1] {
             new_state.pop();
         }
+        // Trim off the start
+        while ! new_state[0] {
+            new_state.remove(0);
+            zero_shift -= 1;
+        }
         self.state.clear();
         self.state.append(&mut new_state);
-        self.zero_offset += zero_shift as usize;
+        self.zero_offset += zero_shift;
         self.gen += 1;
     }
 
@@ -119,10 +124,27 @@ impl Pots {
         let mut sum : isize = 0;
         for i in 0..self.state.len() {
             if self.state[i] {
-                sum += i as isize - self.zero_offset as isize;
+                sum += i as isize - self.zero_offset;
             }
         }
         sum
+    }
+
+    pub fn ff_generate(&mut self, to_generation : usize) {
+        while self.gen < to_generation {
+            let last_gen = self.state.clone();
+            let last_zero_offset = self.zero_offset;
+            self.generate();
+            println!("{}", self);
+            if self.state == last_gen {
+                println!("detected duplication at generation {}", self.gen);
+                println!("{} generations to go", to_generation - self.gen);
+                println!("zero_offset delta is {}", self.zero_offset - last_zero_offset);
+                println!("fast forwarding the remaining generations...");
+                self.zero_offset += (to_generation - self.gen) as isize * (self.zero_offset - last_zero_offset);
+                self.gen = to_generation;
+            }
+        }
     }
 }
 
@@ -130,15 +152,15 @@ impl std::fmt::Display for Pots {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let mut pots = String::new();
         for i in 0..self.state.len() {
-            if i == self.zero_offset {
+            if i as isize == self.zero_offset {
                 pots += "\x1b[31;1m";
             }
             pots.push(if self.state[i] { '#' } else { '.' });
-            if i == self.zero_offset {
+            if i as isize == self.zero_offset {
                 pots += "\x1b[0m";
             }
         }
-        write!(f, "{:2}: {}", self.gen, pots)
+        write!(f, "{:2}: [0 @ {}] {}", self.gen, self.zero_offset, pots)
     }
 }
 
@@ -152,5 +174,11 @@ fn main() {
         pots.generate();
         println!("{}", pots);
     }
-    println!("{}", pots.sum_live_pots());
+    let part1 = pots.sum_live_pots();
+
+    pots.ff_generate(50000000000usize);
+    println!("{}", pots);
+
+    println!("Part 1 = {}", part1);
+    println!("Part 2 = {}", pots.sum_live_pots());
 }
