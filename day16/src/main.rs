@@ -1,16 +1,35 @@
 type Register = isize;
 type Operand = isize;
 
+#[derive(Debug,Hash,Eq,PartialEq,Copy,Clone)]
+#[repr(usize)]
+enum OpCode {
+    Addr, Addi,
+    Mulr, Muli,
+    Banr, Bani,
+    Borr, Bori,
+    Setr, Seti,
+    Gtir, Gtri, Gtrr,
+    Eqir, Eqri, Eqrr,
+}
+
 struct ElfCpu {
     register : [Register; 4],
-    //opcode : [Option<fn(Operand, Operand, Operand)>; 16],
+    opcode : [Option<OpCode>; 16],
 }
 
 impl ElfCpu {
     pub fn new() -> Self {
         Self {
             register : [0; 4],
-            //opcode : [None; 16],
+            opcode : [None; 16],
+        }
+    }
+
+    pub fn with(opcodes : [Option<OpCode>; 16]) -> Self {
+        Self {
+            register : [0; 4],
+            opcode : opcodes,
         }
     }
 
@@ -27,72 +46,82 @@ impl ElfCpu {
         self.register[self.reg(reg)] = val;
     }
 
-    pub fn addr(&mut self, a: Operand, b: Operand, c: Operand) {
+    fn addr(&mut self, a: Operand, b: Operand, c: Operand) {
         self.rwr(c, self.rrd(a) + self.rrd(b));
     }
 
-    pub fn addi(&mut self, a: Operand, b: Operand, c: Operand) {
+    fn addi(&mut self, a: Operand, b: Operand, c: Operand) {
         self.rwr(c, self.rrd(a) + b);
     }
 
-    pub fn mulr(&mut self, a: Operand, b: Operand, c: Operand) {
+    fn mulr(&mut self, a: Operand, b: Operand, c: Operand) {
         self.rwr(c, self.rrd(a) * self.rrd(b));
     }
 
-    pub fn muli(&mut self, a: Operand, b: Operand, c: Operand) {
+    fn muli(&mut self, a: Operand, b: Operand, c: Operand) {
         self.rwr(c, self.rrd(a) * b);
     }
 
-    pub fn banr(&mut self, a: Operand, b: Operand, c: Operand) {
+    fn banr(&mut self, a: Operand, b: Operand, c: Operand) {
         self.rwr(c, self.rrd(a) & self.rrd(b));
     }
 
-    pub fn bani(&mut self, a: Operand, b: Operand, c: Operand) {
+    fn bani(&mut self, a: Operand, b: Operand, c: Operand) {
         self.rwr(c, self.rrd(a) & b);
     }
 
-    pub fn borr(&mut self, a: Operand, b: Operand, c: Operand) {
+    fn borr(&mut self, a: Operand, b: Operand, c: Operand) {
         self.rwr(c, self.rrd(a) | self.rrd(b));
     }
 
-    pub fn bori(&mut self, a: Operand, b: Operand, c: Operand) {
+    fn bori(&mut self, a: Operand, b: Operand, c: Operand) {
         self.rwr(c, self.rrd(a) | b);
     }
 
-    pub fn setr(&mut self, a: Operand, _: Operand, c: Operand) {
+    fn setr(&mut self, a: Operand, _: Operand, c: Operand) {
         self.rwr(c, self.rrd(a));
     }
 
-    pub fn seti(&mut self, a: Operand, _: Operand, c: Operand) {
+    fn seti(&mut self, a: Operand, _: Operand, c: Operand) {
         self.rwr(c, a);
     }
 
-    pub fn gtir(&mut self, a: Operand, b: Operand, c: Operand) {
+    fn gtir(&mut self, a: Operand, b: Operand, c: Operand) {
         self.rwr(c, if a > self.rrd(b) { 1 } else { 0 });
     }
 
-    pub fn gtri(&mut self, a: Operand, b: Operand, c: Operand) {
+    fn gtri(&mut self, a: Operand, b: Operand, c: Operand) {
         self.rwr(c, if self.rrd(a) > b { 1 } else { 0 });
     }
 
-    pub fn gtrr(&mut self, a: Operand, b: Operand, c: Operand) {
+    fn gtrr(&mut self, a: Operand, b: Operand, c: Operand) {
         self.rwr(c, if self.rrd(a) > self.rrd(b) { 1 } else { 0 });
     }
 
-    pub fn eqir(&mut self, a: Operand, b: Operand, c: Operand) {
+    fn eqir(&mut self, a: Operand, b: Operand, c: Operand) {
         self.rwr(c, if a == self.rrd(b) { 1 } else { 0 });
     }
 
-    pub fn eqri(&mut self, a: Operand, b: Operand, c: Operand) {
+    fn eqri(&mut self, a: Operand, b: Operand, c: Operand) {
         self.rwr(c, if self.rrd(a) == b { 1 } else { 0 });
     }
 
-    pub fn eqrr(&mut self, a: Operand, b: Operand, c: Operand) {
+    fn eqrr(&mut self, a: Operand, b: Operand, c: Operand) {
         self.rwr(c, if self.rrd(a) == self.rrd(b) { 1 } else { 0 });
     }
 
-    pub fn check_3plus(&mut self, case : &TestCase) -> bool {
-        let ops : [fn(&mut Self, Operand, Operand, Operand); 16] = [
+    pub fn check(&mut self, case : &TestCase) -> Vec<OpCode> {
+        let opcodes : [OpCode; 16] = [
+            OpCode::Addr, OpCode::Addi,
+            OpCode::Mulr, OpCode::Muli,
+            OpCode::Banr, OpCode::Bani,
+            OpCode::Borr, OpCode::Bori,
+            OpCode::Setr, OpCode::Seti,
+            OpCode::Gtir, OpCode::Gtri, OpCode::Gtrr,
+            OpCode::Eqir, OpCode::Eqri, OpCode::Eqrr,
+        ];
+
+        let ops = [
             Self::addr, Self::addi,
             Self::mulr, Self::muli,
             Self::banr, Self::bani,
@@ -102,16 +131,35 @@ impl ElfCpu {
             Self::eqir, Self::eqri, Self::eqrr,
         ];
 
-        let mut count = 0;
-        for op in &ops {
+        let mut out = Vec::new();
+        for (opcode, op) in opcodes.iter().zip(&ops) {
             self.register = case.before;
             op(self, case.oper.a, case.oper.b, case.oper.c);
             if self.register == case.after {
-                count += 1;
+                out.push(*opcode);
             }
         }
 
-        count >= 3
+        out
+    }
+
+    pub fn exec(&mut self, oper : &Operation) {
+        let ops = [
+            Self::addr, Self::addi,
+            Self::mulr, Self::muli,
+            Self::banr, Self::bani,
+            Self::borr, Self::bori,
+            Self::setr, Self::seti,
+            Self::gtir, Self::gtri, Self::gtrr,
+            Self::eqir, Self::eqri, Self::eqrr,
+        ];
+
+        let op = ops[self.opcode[oper.opcode as usize].unwrap() as usize];
+        op(self, oper.a, oper.b, oper.c);
+    }
+
+    pub fn get_reg(&self, reg : Operand) -> Register {
+        self.register[self.reg(reg)]
     }
 }
 
@@ -268,14 +316,47 @@ fn main() {
     let mut cpu = ElfCpu::new();
 
     let mut total = 0;
+    let mut outputs = Vec::new();
     for input in &inputs {
         match input {
             Input::Part1(case) => {
-                total += if cpu.check_3plus(&case) { 1 } else { 0 };
+                let result = cpu.check(&case);
+                total += if result.len() >= 3 { 1 } else { 0 };
+                outputs.push((case.oper.opcode, result));
             },
-            Input::Part2(_op) => (),
+            Input::Part2(_) => (),
         }
     }
 
     println!("Part 1: {}", total);
+
+    let mut opcode_set : [Option<OpCode>; 16] = [None; 16];
+    let mut known = std::collections::HashSet::new();
+    while opcode_set.iter().any(|x| x.is_none()) {
+        for (opcode, results) in &outputs {
+            let opcode = *opcode;
+            let opcode = opcode as usize;
+            if opcode_set[opcode].is_some() {
+                continue;
+            }
+            let results : Vec<OpCode> = results.iter()
+                    .filter(|code| !known.contains(*code))
+                    .map(|code| *code)
+                    .collect();
+            if results.len() == 1 {
+                opcode_set[opcode] = Some(results[0]);
+                known.insert(results[0]);
+            }
+        }
+    }
+
+    let mut cpu = ElfCpu::with(opcode_set);
+    for input in &inputs {
+        match input {
+            Input::Part1(_) => (),
+            Input::Part2(op) => cpu.exec(op),
+        }
+    }
+
+    println!("Part 2: {}", cpu.get_reg(0));
 }
