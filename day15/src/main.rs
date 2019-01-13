@@ -57,7 +57,7 @@ struct Game {
 }
 
 impl Game {
-    pub fn new(buf : &[u8]) -> Self {
+    pub fn new(buf : &[u8], tilt : usize) -> Self {
         let mut game = Game {
             map : Vec::with_capacity(buf.len()),
             height : 0,
@@ -91,7 +91,7 @@ impl Game {
                     game.units.insert(pos, Unit {
                         team : Team::Elf,
                         hp : 200,
-                        ap : 3,
+                        ap : 3 + tilt,
                         played : false,
                     });
                     Square::Elf
@@ -345,6 +345,11 @@ impl Game {
 
                     unit.played = true;
                     self.units.insert(here, unit);
+
+                    if enemy.team == Team::Elf && enemy.ap != 3 {
+                        eprintln!("An elf died.  Unacceptable!");
+                        return (0, 0, Team::Goblin);
+                    }
                 } else {
                     eprintln!("{} @ {} attacks {} @ {}", unit.team, here, enemy.team, pos);
                     enemy.hp -= unit.ap;
@@ -410,10 +415,26 @@ fn main() {
     let args : Vec<String> = std::env::args().collect();
     let filename = &args[1];
     let buff = std::fs::read(filename).unwrap();
-    let mut game = Game::new(&buff);
+    let mut game = Game::new(&buff, 0);
     let result = game.fight();
     println!("Combat ends after {} full rounds", result.0);
     println!("{} win with {} total hit points left", match result.2 {
             Team::Elf => "Elves", Team::Goblin => "Goblins" }, result.1);
     println!("Part 1: {} ({} x {})", result.0 * result.1, result.0, result.1);
+
+    let mut tilt = 1;
+    loop {
+        println!("Restarting with Elven AP of {}", 3 + tilt);
+        let mut game = Game::new(&buff, tilt);
+        let result = game.fight();
+        if result.2 == Team::Goblin {
+            tilt += 1;
+            continue;
+        }
+        println!("Combat ends after {} full rounds", result.0);
+        println!("{} win with {} total hit points left", match result.2 {
+                Team::Elf => "Elves", Team::Goblin => "Goblins" }, result.1);
+        println!("Part 2: {} ({} x {})", result.0 * result.1, result.0, result.1);
+        break;
+    }
 }
