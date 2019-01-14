@@ -140,10 +140,59 @@ fn main() {
     let buff = std::fs::read(filename).unwrap();
     let mut base = Base::new(&buff);
     println!("Initial state:\n{}", base);
+    let mut history = vec![base.get_counts()];
     for _ in 0..10 {
         base.tick();
         println!("After {} minutes:\n{}", base.get_time(), base);
+        history.push(base.get_counts());
     }
     let counts = base.get_counts();
     println!("Part 1: {} ({} x {})", counts.1 * counts.2, counts.1, counts.2);
+
+    let mut cycle : Option<(usize, usize)> = None; // start, count
+    for t in 10..1000000000 {
+        base.tick();
+        println!("After {} minutes:\n{}", base.get_time(), base);
+
+        let latest = base.get_counts();
+
+        // Analyze history
+        if cycle.is_none() {
+            for i in (0..history.len()).rev() {
+                if latest == history[i] {
+                    cycle = Some((t, history.len() - i));
+                    println!("Cycle suspected at t={}, count={}", t, cycle.unwrap().1);
+                    break;
+                }
+            }
+        }
+
+        // Record history
+        history.push(latest);
+
+        // This mechanism is prone to false positives, so validate the cycle
+        // once enough time has passed
+        if let Some((start, count)) = cycle {
+            if t == start + count * 3 {
+                let mut valid = true;
+                for i in start..start + count * 2 {
+                    valid = valid && history[i] == history[i+count];
+                }
+                if ! valid {
+                    println!("Cycle invalid, trying again");
+                    cycle = None;
+                } else {
+                    println!("Cycle confirmed");
+                    break;
+                }
+            }
+        }
+    }
+    let cycle = cycle.unwrap();
+    println!("After {} min, detected cycle: every {}, history repeats", cycle.0, cycle.1);
+    // Therefore at t > cycle start, it'll match:
+    //   (t - cycle start) % cycle count + cycle start
+
+    let counts = history[(1000000000 - cycle.0) % cycle.1 + cycle.0];
+    println!("Part 2: {} ({} x {})", counts.1 * counts.2, counts.1, counts.2);
 }
