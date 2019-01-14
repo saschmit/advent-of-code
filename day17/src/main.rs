@@ -326,17 +326,22 @@ impl Ground {
         }
     }
 
-    pub fn count_water(&self) -> usize {
-        let mut count = 0;
+    pub fn count_water(&self) -> (usize, usize) {
+        let mut count_unstable = 0;
+        let mut count_stable = 0;
         for y in self.min_y..self.scan.len() {
             for x in 0..self.scan[y].len() {
-                count += match self.scan[y][x] {
+                count_unstable += match self.scan[y][x] {
                     Square::Water | Square::Flow => 1,
+                    _ => 0,
+                };
+                count_stable += match self.scan[y][x] {
+                    Square::Water => 1,
                     _ => 0,
                 };
             }
         }
-        count
+        (count_unstable, count_stable)
     }
 }
 
@@ -368,5 +373,7 @@ fn main() {
     println!("Initial State:\n{}", ground);
     ground.flow();
     println!("After water flow:\n{}", ground);
-    println!("Part 1: {} m²", ground.count_water());
+    let (part1, part2) = ground.count_water();
+    println!("Part 1: {} m²", part1);
+    println!("Part 2: {} m²", part2);
 }
