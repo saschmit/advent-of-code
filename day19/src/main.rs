@@ -20,6 +20,12 @@ struct Instruction {
     c  : Word,
 }
 
+impl std::fmt::Display for Instruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?} {} {} {}", self.op, self.a, self.b, self.c)
+    }
+}
+
 const NUM_REGISTERS : usize = 6;
 
 struct ElfCpu {
@@ -28,9 +34,9 @@ struct ElfCpu {
 }
 
 impl ElfCpu {
-    pub fn new() -> Self {
+    pub fn new(r0 : Word) -> Self {
         Self {
-            register : [0; NUM_REGISTERS],
+            register : [r0, 0, 0, 0, 0, 0],
             ip : 0,
         }
     }
@@ -133,9 +139,61 @@ impl ElfCpu {
             if self.ip >= program.len() {
                 break;
             }
+            if cfg!(feature = "hack") {
+                if self.ip == 2 && self.register[2] != 0 {
+                    if cfg!(feature = "trace") {
+                        println!("> Engaging hack");
+                        println!("ip={} [{}, {}, {}, {}, {}, {}] ...",
+                            self.ip,
+                            self.register[0],
+                            self.register[1],
+                            self.register[2],
+                            self.register[3],
+                            self.register[4],
+                            self.register[5]);
+                    }
+                    while self.register[2] <= self.register[4] {
+                        if self.register[4] % self.register[2] == 0 {
+                            self.register[0] += self.register[2];
+                        }
+                        self.register[2] += 1;
+                    }
+                    if cfg!(feature = "trace") {
+                        println!("... [{}, {}, {}, {}, {}, {}]",
+                            self.register[0],
+                            self.register[1],
+                            self.register[2],
+                            self.register[3],
+                            self.register[4],
+                            self.register[5]);
+                    }
+                    self.ip = 12;
+                    continue;
+                }
+            }
             self.register[ip_reg] = self.ip as Word;
             let inst = &program[self.ip];
+            if cfg!(feature = "trace") {
+                print!("ip={} [{}, {}, {}, {}, {}, {}] {} ",
+                    self.ip,
+                    self.register[0],
+                    self.register[1],
+                    self.register[2],
+                    self.register[3],
+                    self.register[4],
+                    self.register[5],
+                    inst);
+            }
             self.exec(inst);
+            if cfg!(feature = "trace") {
+                println!("[{}, {}, {}, {}, {}, {}]",
+                    self.register[0],
+                    self.register[1],
+                    self.register[2],
+                    self.register[3],
+                    self.register[4],
+                    self.register[5]);
+            }
             self.ip = self.register[ip_reg] as usize;
             self.ip += 1;
         }
@@ -221,8 +279,17 @@ fn main() {
     let args : Vec<String> = std::env::args().collect();
     let filename = &args[1];
     let buff = std::fs::read(filename).unwrap();
-    let (ip_reg, program) = parse(&buff);
-    let mut cpu = ElfCpu::new();
-    cpu.run(ip_reg, program);
-    println!("Part 1: {}", cpu.get_reg(0));
+    if cfg!(feature = "part1") || ! cfg!(feature = "part2") {
+        let (ip_reg, program) = parse(&buff);
+        let mut cpu = ElfCpu::new(0);
+        cpu.run(ip_reg, program);
+        println!("Part 1: {}", cpu.get_reg(0));
+    }
+
+    if cfg!(feature = "part2") || ! cfg!(feature = "part1") {
+        let (ip_reg, program) = parse(&buff);
+        let mut cpu = ElfCpu::new(1);
+        cpu.run(ip_reg, program);
+        println!("Part 2: {}", cpu.get_reg(0));
+    }
 }
