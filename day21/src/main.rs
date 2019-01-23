@@ -28,16 +28,27 @@ impl std::fmt::Display for Instruction {
 
 const NUM_REGISTERS : usize = 6;
 
+enum Part {
+    Part1,
+    Part2,
+}
+
 struct ElfCpu {
     register : [Word; NUM_REGISTERS],
     ip : usize,
+    part : Part,
+    dupes : std::collections::HashSet<isize>,
+    last : Option<isize>,
 }
 
 impl ElfCpu {
-    pub fn new(r0 : Word) -> Self {
+    pub fn new(r0 : Word, part : Part) -> Self {
         Self {
             register : [r0, 0, 0, 0, 0, 0],
             ip : 0,
+            part,
+            dupes: std::collections::HashSet::new(),
+            last: None,
         }
     }
 
@@ -140,8 +151,20 @@ impl ElfCpu {
                 break;
             }
             if self.ip == 28 {
-                println!("r0 <= r2 ({})", self.register[2]);
-                self.register[0] = self.register[2];
+                match self.part {
+                    Part::Part1 => {
+                        println!("r0 <= r2 ({})", self.register[2]);
+                        self.register[0] = self.register[2];
+                    },
+                    Part::Part2 => {
+                        if self.dupes.contains(&self.register[2]) {
+                            self.register[0] = self.last.unwrap();
+                        } else {
+                            self.dupes.insert(self.register[2]);
+                            self.last = Some(self.register[2]);
+                        }
+                    },
+                }
             }
             self.register[ip_reg] = self.ip as Word;
             let inst = &program[self.ip];
@@ -252,7 +275,12 @@ fn main() {
     let filename = &args[1];
     let buff = std::fs::read(filename).unwrap();
     let (ip_reg, program) = parse(&buff);
-    let mut cpu = ElfCpu::new(0);
+    let mut cpu = ElfCpu::new(0, Part::Part1);
     cpu.run(ip_reg, program);
     println!("Part 1: {}", cpu.get_reg(0));
+
+    let (ip_reg, program) = parse(&buff);
+    let mut cpu = ElfCpu::new(0, Part::Part2);
+    cpu.run(ip_reg, program);
+    println!("Part 2: {}", cpu.get_reg(0));
 }
