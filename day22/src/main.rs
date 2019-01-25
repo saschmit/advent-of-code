@@ -158,24 +158,31 @@ impl Survey {
     }
 
     pub fn find_minimum_time_path(&mut self) -> usize {
-        let mut todo = Vec::new();
+        let mut todo = std::collections::BinaryHeap::new();
         let mut graph = std::collections::HashMap::new();
 
+        #[derive(Clone,PartialEq,Eq)]
+        struct Node(usize, usize, Tool, usize);
+        impl std::cmp::PartialOrd for Node {
+            fn partial_cmp(&self, other : &Node) -> Option<std::cmp::Ordering> {
+                Some(self.3.cmp(&other.3).reverse())
+            }
+        }
+        impl std::cmp::Ord for Node {
+            fn cmp(&self, other : &Node) -> std::cmp::Ordering {
+                self.3.cmp(&other.3).reverse()
+            }
+        }
+
         // Initialize graph & todo list
-        todo.push((0, 0, Tool::Torch));
+        todo.push(Node(0, 0, Tool::Torch, 0));
         graph.insert((0, 0, Tool::Torch), 0);
 
         // Go through the todo list to seek out graph nodes with the shortest path
         let mut target_found = false;
         let mut min_dist_to_tgt = std::usize::MAX;
         loop {
-            todo.sort_unstable_by(|a, b| {
-                let a = &graph.get(a).unwrap();
-                let b = &graph.get(b).unwrap();
-                b.cmp(a)
-            });
-
-            if let Some((row, col, tool)) = todo.pop() {
+            if let Some(Node(row, col, tool, _)) = todo.pop() {
                 for (nrow, ncol, ntool, cost) in self.get_neighbors(Pos { x: col, y: row }, tool) {
                     // Check if we've found our target
                     let nkey = (nrow, ncol, ntool);
@@ -186,7 +193,7 @@ impl Survey {
                     }
                     if ! graph.contains_key(&nkey) {
                         if ! target_found || alt < min_dist_to_tgt {
-                            todo.push(nkey);
+                            todo.push(Node(nrow, ncol, ntool, alt));
                         }
                     }
                     let entry = graph.entry(nkey).or_insert(alt);
