@@ -90,4 +90,33 @@ fn main() {
         }
     }
     println!("Part 1 = {}", in_range);
+
+    #[derive(Debug,Ord,PartialOrd,Eq,PartialEq)]
+    enum End {
+        Lo,
+        Hi,
+    }
+    let mut list = Vec::new();
+    for nano in &nanos {
+        let dist = nano.pos.x + nano.pos.y + nano.pos.z;
+        list.push((dist - nano.signal_radius as i64, End::Lo));
+        list.push((dist + nano.signal_radius as i64, End::Hi));
+    }
+    list.sort_unstable();
+    let mut vote = 0;
+    let mut vote_peak = i64::min_value();
+    let mut closest = 0;
+    for (dist, side) in list {
+        match side {
+            End::Lo => {
+                vote += 1;
+                if vote > vote_peak {
+                    vote_peak = vote;
+                    closest = dist;
+                }
+            },
+            End::Hi => vote -= 1,
+        }
+    }
+    println!("Part 2 = {}", closest);
 }
