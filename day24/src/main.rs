@@ -40,7 +40,7 @@ impl Group {
 }
 
 impl Group {
-    pub fn new(desc: &str) -> Self {
+    pub fn new(desc: &str, boost : usize) -> Self {
         let mut grp = Self {
             n_units: 0,
             unit: Unit {
@@ -94,6 +94,7 @@ impl Group {
             offset += 1;
         }
         grp.unit.ap = words[offset + 5].parse().unwrap();
+        grp.unit.ap += boost;
         grp.unit.attack_type = words[offset + 6].to_string();
         grp.unit.initiative = words[offset + 10].parse().unwrap();
         grp
@@ -148,7 +149,7 @@ impl Army {
     }
 }
 
-fn parse(input : String) -> (Army, Army) {
+fn parse(input : &String, boost : usize) -> (Army, Army) {
     let mut lines = input.lines();
 
     assert_eq!(Some("Immune System:"), lines.next());
@@ -161,7 +162,7 @@ fn parse(input : String) -> (Army, Army) {
         if line.is_empty() {
             break;
         }
-        good.groups.push(Group::new(line));
+        good.groups.push(Group::new(line, boost));
     }
 
     assert_eq!(Some("Infection:"), lines.next());
@@ -171,7 +172,7 @@ fn parse(input : String) -> (Army, Army) {
     };
     loop {
         if let Some(line) = lines.next() {
-            bad.groups.push(Group::new(line));
+            bad.groups.push(Group::new(line, 0));
         } else {
             break;
         }
@@ -180,7 +181,7 @@ fn parse(input : String) -> (Army, Army) {
     (good, bad)
 }
 
-fn fight(good : &mut Army, bad : &mut Army) -> usize {
+fn fight(good : &mut Army, bad : &mut Army) -> (usize, Side) {
     loop {
         eprintln!("Immune System:");
         for g in 0..good.groups.len() {
@@ -211,6 +212,7 @@ fn fight(good : &mut Army, bad : &mut Army) -> usize {
         }
         order.sort_unstable_by_key(|k| -(k.0 as isize));
 
+        let mut total_units_lost = 0;
         for (_, side, g) in order {
             let e = match side {
                 Side::ImmuneSystem => {
@@ -241,15 +243,22 @@ fn fight(good : &mut Army, bad : &mut Army) -> usize {
                 },
             };
             eprintln!("{:?} group {} attacks defending group {}, killing {} units", side, g+1, e+1, units_lost);
+            total_units_lost += units_lost;
         }
 
         eprintln!("");
+
+        if total_units_lost == 0 {
+            eprintln!("Stalemate detected.");
+            break;
+        }
 
         if good.groups.iter().fold(0, |sum, group| sum + group.n_units) == 0 ||
            bad.groups.iter().fold(0, |sum, group| sum + group.n_units) == 0 {
             break;
         }
     }
+    let mut dead = Side::ImmuneSystem;
     eprintln!("Immune System:");
     let mut printed = false;
     for g in 0..good.groups.len() {
@@ -260,6 +269,7 @@ fn fight(good : &mut Army, bad : &mut Army) -> usize {
     }
     if ! printed {
         eprintln!("No groups remain.");
+        dead = Side::ImmuneSystem;
     }
     printed = false;
     eprintln!("Infection:");
@@ -271,10 +281,12 @@ fn fight(good : &mut Army, bad : &mut Army) -> usize {
     }
     if ! printed {
         eprintln!("No groups remain.");
+        dead = Side::Infection;
     }
     eprintln!("");
-    good.groups.iter().fold(0, |sum, group| sum + group.n_units) +
-        bad.groups.iter().fold(0, |sum, group| sum + group.n_units)
+    (good.groups.iter().fold(0, |sum, group| sum + group.n_units) +
+        bad.groups.iter().fold(0, |sum, group| sum + group.n_units),
+     dead)
 }
 
 fn main() {
@@ -282,7 +294,19 @@ fn main() {
     let filename = &args[1];
     let buff = std::fs::read(filename).unwrap();
     let buff = String::from_utf8(buff).unwrap();
-    let (mut good, mut bad) = parse(buff);
-    let part1 = fight(&mut good, &mut bad);
+    let (mut good, mut bad) = parse(&buff, 0);
+    let part1 = fight(&mut good, &mut bad).0;
     println!("Part 1 = {}", part1);
+    let mut boost = 0;
+    let part2 = loop {
+        boost += 1;
+        println!("Trying with boost = {}", boost);
+
+        let (mut good, mut bad) = parse(&buff, boost);
+        let (part2, loser) = fight(&mut good, &mut bad);
+        if let Side::Infection = loser {
+            break part2;
+        }
+    };
+    println!("Part 2 = {}", part2);
 }
