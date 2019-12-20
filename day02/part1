@@ -1,0 +1,10 @@
+#!/usr/bin/python
+
+import sys
+import intcode
+
+program = intcode.load_pgm(sys.argv[1])
+program[1] = 12
+program[2] = 2
+result = intcode.run_pgm(program)
+print(result[0])
