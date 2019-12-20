@@ -1,0 +1,20 @@
+#!/usr/bin/python
+
+import sys
+import intcode
+
+program = intcode.load_pgm(sys.argv[1])
+
+TARGET = 19690720
+
+for noun in xrange(0, 100):
+    for verb in xrange(0, 100):
+        program[1] = noun
+        program[2] = verb
+        output = intcode.run_pgm(program[:])[0]
+        if output == TARGET:
+            print(100 * noun + verb)
+            exit(0)
+
+print("ERROR")
+exit(1)
