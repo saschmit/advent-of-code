@@ -8,23 +8,24 @@ def load_pgm(filename):
 def run_pgm(program):
     ip = 0
     while True:
-        instruction = program[ip]
-        if instruction == 1:
+        opcode = program[ip]
+        if opcode == 1:
             src1 = program[ip + 1]
             src2 = program[ip + 2]
             dst = program[ip + 3]
             program[dst] = program[src1] + program[src2]
-        elif instruction == 2:
+            ip += 4
+        elif opcode == 2:
             src1 = program[ip + 1]
             src2 = program[ip + 2]
             dst = program[ip + 3]
             program[dst] = program[src1] * program[src2]
-        elif instruction == 99:
+            ip += 4
+        elif opcode == 99:
+            ip += 1
             break
         else:
-            raise NotImplementedError("Illegal instruction")
-
-        ip += 4
+            raise NotImplementedError("Illegal opcode")
 
     return program
 
