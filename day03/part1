@@ -17,44 +17,23 @@ COLOR_TWO = '\033[32m'
 COLOR_BOTH = '\033[31m'
 
 class Panel:
-    def __init__(self):
-        self.origin = (0, 0)
-        self.panel = [ [ (CENTER, COLOR_NONE) ] ]
-        self.default = (BLANK, COLOR_NONE)
+    def __init__(self, cols, rows):
+        self.panel = [ cell[:] for cell in [ [ (BLANK, COLOR_NONE) ] * cols ] * rows ]
+        self.panel[0][0] = (CENTER, COLOR_NONE)
+        self.skew = (0, 0)
     def read(self, col, row):
-        try:
-            if col + self.origin[0] < 0 or row + self.origin[1] < 0:
-                raise IndexError('out of range')
-            return self.panel[row + self.origin[1]][col + self.origin[0]]
-        except IndexError:
-            return self.default
+        self.skew = (min(self.skew[0], col), min(self.skew[1], row))
+        return self.panel[row][col]
     def draw(self, col, row, item):
-        while row + self.origin[1] < 0:
-            self.prepend_row()
-        while col + self.origin[0] < 0:
-            self.prepend_col()
-        while row + self.origin[1] >= len(self.panel):
-            self.append_row()
-        while col + self.origin[0] >= len(self.panel[0]):
-            self.append_col()
-
-        self.panel[row + self.origin[1]][col + self.origin[0]] = item
-    def prepend_row(self):
-        self.origin = (self.origin[0], self.origin[1] + 1)
-        self.panel.insert( 0, [ self.default ] * len(self.panel[0]))
-    def append_row(self):
-        self.panel.append( [ self.default ] * len(self.panel[0]) )
-    def prepend_col(self):
-        self.origin = (self.origin[0] + 1, self.origin[1])
-        for y in xrange(len(self.panel)):
-            self.panel[y].insert(0, self.default)
-    def append_col(self):
-        for y in xrange(len(self.panel)):
-            self.panel[y].append(self.default)
+        self.skew = (min(self.skew[0], col), min(self.skew[1], row))
+        self.panel[row][col] = item
     def __str__(self):
+        if len(self.panel[0]) > 237:
+            return "[You don't want that]"
         out = BLANK * (len(self.panel[0]) + 2) + '\n'
         for y in xrange(len(self.panel)):
-            out += BLANK + "".join(map(lambda t: t[1] + t[0] + COLOR_RESET, self.panel[y])) + BLANK + "\n"
+            y += self.skew[1]
+            out += BLANK + "".join(map(lambda t: t[1] + t[0] + COLOR_RESET, self.panel[y][self.skew[0]:] + self.panel[y][:self.skew[0]])) + BLANK + "\n"
         out += BLANK * (len(self.panel[0]) + 2)
         return out
 
@@ -99,11 +78,40 @@ def apply_wire(panel, color, path):
 
     return out_list
 
+def compute_final_grid_size(paths):
+    min_col = 0
+    max_col = 0
 
-panel = Panel()
+    min_row = 0
+    max_row = 0
+    for path in paths:
+        cur_col = 0
+        cur_row = 0
+        for step in path:
+            direction = step[0]
+            count = int(step[1:])
+            if direction == 'U':
+                cur_row -= count
+            elif direction == 'D':
+                cur_row += count
+            elif direction == 'L':
+                cur_col -= count
+            elif direction == 'R':
+                cur_col += count
+
+            min_col = min(min_col, cur_col)
+            max_col = max(max_col, cur_col)
+            min_row = min(min_row, cur_row)
+            max_row = max(max_row, cur_row)
+
+    return (max_col - min_col + 1, max_row - min_row + 1)
 
 paths = map(lambda s: s.split(','), open(sys.argv[1]).read().strip().split('\n'))
 print(paths)
+
+size = compute_final_grid_size(paths)
+
+panel = Panel(size[0], size[1])
 
 apply_wire(panel, COLOR_ONE, paths[0])
 intersections = apply_wire(panel, COLOR_TWO, paths[1])
