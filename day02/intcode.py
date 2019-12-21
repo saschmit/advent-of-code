@@ -10,6 +10,7 @@ POSITION_MODE = 0
 IMMEDIATE_MODE = 1
 
 def run_pgm(program, get_input=None, put_output=None):
+    program = program[:]
     ip = 0
 
     def param(param_num, write_val=None):
@@ -41,6 +42,22 @@ def run_pgm(program, get_input=None, put_output=None):
         elif opcode == 4:
             put_output(param(0))
             ip += 2
+        elif opcode == 5:
+            if param(0) != 0:
+                ip = param(1)
+            else:
+                ip += 3
+        elif opcode == 6:
+            if param(0) == 0:
+                ip = param(1)
+            else:
+                ip += 3
+        elif opcode == 7:
+            param(2, 1 if param(0) < param(1) else 0)
+            ip += 4
+        elif opcode == 8:
+            param(2, 1 if param(0) == param(1) else 0)
+            ip += 4
         elif opcode == 99:
             ip += 1
             break
