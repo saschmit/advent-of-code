@@ -1,0 +1,45 @@
+#!/usr/bin/python
+
+import sys
+
+class Node:
+	def __init__(self, name):
+		self.name = name
+		self.sats = []
+	def add_sat(self, sat):
+		self.sats.append(sat)
+
+class OrbitMap:
+	def __init__(self):
+		self.nodes = { 'COM': Node('COM') }
+	def add_sat(self, body, sat):
+		if body not in self.nodes:
+			raise KeyError("unknown body '{}'".format(body))
+		if sat in self.nodes:
+			raise RuntimeError("adding sat '{}' I already know about??".format(sat))
+		self.nodes[sat] = Node(sat)
+		self.nodes[body].add_sat(self.nodes[sat])
+
+uom = OrbitMap()
+queue = []
+
+lines = open(sys.argv[1]).read().strip().split('\n')
+queue = map(lambda line: line.split(')'), lines)
+
+requeue = []
+
+while queue:
+    for body, sat in queue:
+        try:
+            uom.add_sat(body, sat)
+        except KeyError:
+            requeue.append((body, sat))
+    queue = requeue
+    requeue = []
+
+def count_total_orbits(the_map):
+    def count(node, depth):
+        return depth + sum(map(lambda node: count(node, depth+1), node.sats))
+    return count(the_map.nodes['COM'], 0)
+
+print(count_total_orbits(uom))
