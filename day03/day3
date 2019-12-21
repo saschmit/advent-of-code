@@ -106,6 +106,45 @@ def compute_final_grid_size(paths):
 
     return (max_col - min_col + 1, max_row - min_row + 1)
 
+def get_delay_closure(paths):
+    def compute_delay(intersection):
+        total_delay = 0
+        for path in paths:
+            delay = 0
+            cur_col = 0
+            cur_row = 0
+            for step in path:
+                direction = step[0]
+                count = int(step[1:])
+                if direction == 'U':
+                    if intersection[0] == cur_col and cur_row - count <= intersection[1] < cur_row:
+                        delay += cur_row - intersection[1]
+                        break
+                    cur_row -= count
+                elif direction == 'D':
+                    if intersection[0] == cur_col and cur_row <= intersection[1] < cur_row + count:
+                        delay += intersection[1] - cur_row
+                        break
+                    cur_row += count
+                elif direction == 'L':
+                    if intersection[1] == cur_row and cur_col - count <= intersection[0] < cur_col:
+                        delay += cur_col - intersection[0]
+                        break
+                    cur_col -= count
+                elif direction == 'R':
+                    if intersection[1] == cur_row and cur_col <= intersection[0] < cur_col + count:
+                        delay += intersection[0] - cur_col
+                        break
+                    cur_col += count
+
+                delay += count
+
+            total_delay += delay
+
+        return total_delay
+
+    return compute_delay
+
 paths = map(lambda s: s.split(','), open(sys.argv[1]).read().strip().split('\n'))
 print(paths)
 
@@ -120,3 +159,7 @@ print(panel)
 
 part1 = min(map(sum, map(lambda t: (abs(t[0]), abs(t[1])), intersections)))
 print(part1)
+
+compute_delay = get_delay_closure(paths)
+part2 = min(map(compute_delay, intersections))
+print(part2)
