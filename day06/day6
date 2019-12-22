@@ -6,8 +6,12 @@ class Node:
 	def __init__(self, name):
 		self.name = name
 		self.sats = []
+                self.body = None
+                self.depth = 0
 	def add_sat(self, sat):
 		self.sats.append(sat)
+                sat.body = self
+                sat.depth = self.depth + 1
 
 class OrbitMap:
 	def __init__(self):
@@ -38,8 +42,23 @@ while queue:
     requeue = []
 
 def count_total_orbits(the_map):
-    def count(node, depth):
-        return depth + sum(map(lambda node: count(node, depth+1), node.sats))
-    return count(the_map.nodes['COM'], 0)
+    def count(node):
+        return node.depth + sum(map(count, node.sats))
+    return count(the_map.nodes['COM'])
 
 print(count_total_orbits(uom))
+
+def calc_xfer_dist(src, dst):
+    path = []
+    node = src
+    while node is not None:
+        path.append(node.name)
+        node = node.body
+    node = dst
+    while node.name not in path:
+        node = node.body
+
+    return src.depth - node.depth + dst.depth - node.depth
+
+if 'YOU' in uom.nodes and 'SAN' in uom.nodes:
+    print(calc_xfer_dist(uom.nodes['YOU'].body, uom.nodes['SAN'].body))
