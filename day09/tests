@@ -1,0 +1,27 @@
+#!/usr/bin/python
+
+import intcode
+
+case1 = [109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99]
+
+cmp_val = []
+def out1(val):
+    cmp_val.append(val)
+
+intcode.run_pgm(case1, None, out1)
+
+assert cmp_val == case1
+
+case2 = [1102,34915192,34915192,7,4,7,99,0]
+
+def out2(val):
+	assert len(str(val)) == 16
+
+intcode.run_pgm(case2, None, out2)
+
+case3 = [104,1125899906842624,99]
+
+def out3(val):
+	assert val == 1125899906842624
+
+intcode.run_pgm(case3, None, out3)
