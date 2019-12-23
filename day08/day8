@@ -1,0 +1,44 @@
+#!/usr/bin/python
+
+import sys
+
+encoded_image = open(sys.argv[1]).read().strip()
+width = int(sys.argv[2])
+height = int(sys.argv[3])
+depth = len(encoded_image) / width / height
+
+image = []
+for layer in xrange(depth):
+    layer = []
+    for row in xrange(height):
+        layer.append([ None ] * width)
+    image.append(layer)
+
+offset = 0
+part1 = []
+for layer in xrange(depth):
+    zeros = 0
+    ones = 0
+    twos = 0
+    for row in xrange(height):
+        for col in xrange(width):
+            image[layer][row][col] = int(encoded_image[offset])
+            offset += 1
+
+            if image[layer][row][col] == 0:
+                zeros += 1
+            elif image[layer][row][col] == 1:
+                ones += 1
+            elif image[layer][row][col] == 2:
+                twos += 1
+    part1.append((zeros, ones * twos))
+
+smallest = width * height + 1
+best = None
+for l in xrange(depth):
+    if part1[l][0] < smallest:
+        smallest = part1[l][0]
+        best = l
+
+print(part1[best][1])
+
