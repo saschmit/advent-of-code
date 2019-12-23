@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import intcode
+import subprocess
 
 def gen_in_fn(setting, in_val):
     buff.append(in_val)
@@ -50,11 +51,38 @@ cur_max = 0
 best_settings = None
 for settings in permutation([0,1,2,3,4]):
     out_val = 0
-    for n in xrange(5):
-        in_val = out_val
-        buff = []
-        intcode.run_pgm(pgm, gen_in_fn(settings[n], in_val), gen_out_fn(buff))
-        out_val = buff.pop()
+    args = [ './amp-seq', ','.join(map(str, pgm)) ]
+    args.extend(map(str, settings))
+    amps = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    amps.stdin.write('0\n')
+    amps.stdin.flush()
+    out_val = int(amps.stdout.readline())
+    amps.wait()
+
+    if out_val > cur_max:
+        cur_max = out_val
+        best_settings = settings
+
+print(cur_max)
+
+cur_max = 0
+best_settings = None
+for settings in permutation([5,6,7,8,9]):
+    out_val = 0
+    args = [ './amp-seq', ','.join(map(str, pgm)) ]
+    args.extend(map(str, settings))
+    amps = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    while amps.returncode is None:
+        amps.stdin.write('{}\n'.format(out_val))
+        amps.stdin.flush()
+        line = amps.stdout.readline()
+        if not line.strip():
+            amps.wait()
+            break
+        else:
+            out_val = int(line)
+            amps.poll()
+
     if out_val > cur_max:
         cur_max = out_val
         best_settings = settings
