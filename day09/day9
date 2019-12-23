@@ -11,3 +11,8 @@ def put(val):
     print(val)
 
 intcode.run_pgm(pgm, get, put)
+
+def get2():
+    return 2
+
+intcode.run_pgm(pgm, get2, put)
