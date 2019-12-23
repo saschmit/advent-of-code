@@ -42,3 +42,17 @@ for l in xrange(depth):
 
 print(part1[best][1])
 
+for row in xrange(height):
+    for col in xrange(width):
+        for layer in xrange(depth):
+            if image[layer][row][col] == 2:
+                continue
+            elif image[layer][row][col] == 0:
+                sys.stdout.write('..')
+                break
+            elif image[layer][row][col] == 1:
+                sys.stdout.write('XX')
+                break
+            sys.stdout.write('  ')
+    sys.stdout.write('\n')
+
