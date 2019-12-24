@@ -1,0 +1,93 @@
+#!/usr/bin/python
+
+from __future__ import print_function
+import sys
+
+class Position:
+    def __init__(self, pos):
+        self.pos = list(pos)
+
+    def __iadd__(self, other):
+        for axis in xrange(3):
+            self.pos[axis] += other.vel[axis]
+        return self
+
+    def __str__(self):
+        return "pos=<x={}, y={}, z={}>".format(self.pos[0], self.pos[1], self.pos[2])
+
+class Velocity:
+    def __init__(self, vel):
+        self.vel = list(vel)
+
+    def __str__(self):
+        return "vel=<x={}, y={}, z={}>".format(self.vel[0], self.vel[1], self.vel[2])
+
+def get_data_from_file(filename):
+    data = []
+    for line in open(filename).readlines():
+        x, y, z = map(lambda s: int(s[2:]), line[1:-2].split(', '))
+        data.append((x,y,z))
+    return data
+
+class Sim:
+    def __init__(self, data):
+        self.locs = list(map(Position, data))
+        self.vels = [Velocity((0,0,0)) for i in xrange(len(self.locs))]
+        self.t = 0
+
+    def step(self):
+        # Update velocities by applying gravity
+        gravitated = set()
+        for body1 in xrange(len(self.vels)):
+            for body2 in xrange(len(self.vels)):
+                if body1 == body2 or (body2, body1) in gravitated:
+                    continue
+
+                for axis in xrange(3):
+                    if self.locs[body1].pos[axis] == self.locs[body2].pos[axis]:
+                        pass
+                    elif self.locs[body1].pos[axis] < self.locs[body2].pos[axis]:
+                        self.vels[body1].vel[axis] += 1
+                        self.vels[body2].vel[axis] -= 1
+                    elif self.locs[body1].pos[axis] > self.locs[body2].pos[axis]:
+                        self.vels[body1].vel[axis] -= 1
+                        self.vels[body2].vel[axis] += 1
+                    else:
+                        assert False
+                gravitated.add((body1,body2))
+
+        # Update positions by applying velocities
+        for body in xrange(len(self.vels)):
+            self.locs[body] += self.vels[body]
+
+        # Step time by 1
+        self.t += 1
+
+    def __str__(self):
+        return """After {} steps:
+{}, {}
+{}, {}
+{}, {}
+{}, {}
+""".format(self.t, self.locs[0], self.vels[0], self.locs[1], self.vels[1], self.locs[2], self.vels[2], self.locs[3], self.vels[3])
+
+if __name__ == '__main__':
+    sim = Sim(get_data_from_file(sys.argv[1]))
+    print(sim)
+    steps = int(sys.argv[2])
+    for step in xrange(1, steps + 1):
+        sim.step()
+        if step % (steps / 10) == 0:
+            print(sim)
+
+    # Calculate energy
+    totals = 0
+    for body in xrange(len(sim.locs)):
+        pot = sum(map(abs,sim.locs[body].pos))
+        kin = sum(map(abs,sim.vels[body].vel))
+        total = pot * kin
+        print("pot = {}, kin = {}, total = {}".format(pot, kin, total))
+        totals += total
+
+    print(totals)
+        
