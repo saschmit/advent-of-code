@@ -1,0 +1,130 @@
+#!/usr/bin/python
+
+from __future__ import print_function
+import intcode
+import sys
+
+COLOR_BLACK = 0
+COLOR_WHITE = 1
+
+class SparseGrid:
+    def __init__(self, part=1):
+        self.grid = {}
+        self.min_x = 0
+        self.min_y = 0
+        self.max_x = 0
+        self.max_y = 0
+        if part == 2:
+            self.grid[(0,0)] = COLOR_WHITE
+
+    def set(self, x, y, color):
+        self.min_x = min(self.min_x, x)
+        self.min_y = min(self.min_y, y)
+        self.max_x = max(self.max_x, x)
+        self.max_y = max(self.max_y, y)
+        self.grid[(x, y)] = color
+
+    def at(self, x, y):
+        try:
+            return self.grid[(x, y)]
+        except KeyError:
+            return COLOR_BLACK
+
+    def get_height(self):
+        return self.max_y - self.min_y + 1
+
+    def get_width(self):
+        return self.max_x - self.min_x + 1
+
+    def get_cell_count(self):
+        return len(self.grid)
+
+    def __str__(self):
+        out = ""
+        for y in xrange(self.get_height()):
+            for x in xrange(self.get_width()):
+                out += '.' if self.at(x, y) == COLOR_BLACK else '#'
+            out += '\n'
+        return out.strip()
+
+DIR_UP = 0
+DIR_RT = 1
+DIR_DN = 2
+DIR_LT = 3
+
+def turn_left(compass):
+    assert DIR_UP <= compass <= DIR_LT
+    return (compass - 1) % 4
+
+def turn_right(compass):
+    assert DIR_UP <= compass <= DIR_LT
+    return (compass + 1) % 4
+
+class Painter:
+    def __init__(self, grid):
+        self.grid = grid
+        self.x = 0
+        self.y = 0
+        self.compass = DIR_UP
+
+        # expect a paint color
+        self.out_state = 0
+
+    def get_in_fn(self):
+        def __in():
+            return self.grid.at(self.x, self.y)
+
+        return __in
+
+    def get_out_fn(self):
+        def __out(val):
+            if self.out_state == 0:
+                # paint
+                self.grid.set(self.x, self.y, val)
+
+                # expect a direction next
+                self.out_state = 1
+            else:
+                # turn
+                turn = turn_right if val else turn_left
+                self.compass = turn(self.compass)
+
+                # Step 1 panel
+                if self.compass == DIR_UP:
+                    self.y -= 1
+                elif self.compass == DIR_RT:
+                    self.x += 1
+                elif self.compass == DIR_DN:
+                    self.y += 1
+                elif self.compass == DIR_LT:
+                    self.x -= 1
+
+                # expect a paint color next
+                self.out_state = 0
+
+        return __out
+
+    def __str__(self):
+        if self.compass == DIR_UP:
+            return '^'
+        elif self.compass == DIR_RT:
+            return '>'
+        elif self.compass == DIR_DN:
+            return 'v'
+        elif self.compass == DIR_LT:
+            return '<'
+
+grid = SparseGrid()
+robot = Painter(grid)
+
+pgm = intcode.load_pgm('input')
+intcode.run_pgm(pgm, robot.get_in_fn(), robot.get_out_fn())
+
+print(grid.get_cell_count())
+
+grid = SparseGrid(2)
+robot = Painter(grid)
+pgm = intcode.load_pgm('input')
+intcode.run_pgm(pgm, robot.get_in_fn(), robot.get_out_fn())
+
+print(grid)
