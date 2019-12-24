@@ -1,7 +1,10 @@
 #!/usr/bin/python
 
+from __future__ import print_function
 import sys
 from fractions import gcd
+
+debug = False
 
 class SpaceMap:
     def __init__(self, filename):
@@ -23,6 +26,12 @@ class SpaceMap:
 
     def get_cols(self):
         return len(self.space[0])
+
+    def count_asteroids(self):
+        return (
+            (self.get_rows() * self.get_cols())
+             - sum([ self.space[row].count('.') for row in xrange(self.get_rows()) ])
+             - 1)
 
     def __str__(self):
         return "\n".join(map(lambda l: ''.join(l), self.space))
@@ -57,18 +66,54 @@ for station_row in xrange(sm.get_rows()):
 
         candidates.append(
             (
-                (station_col, station_row),
-                len(detects)
+                (station_row, station_col),
+                detects
             )
         )
 
 best = None
-most = 0
+most = set()
 for item in candidates:
     coords = item[0]
     detects = item[1]
-    if detects > most:
+    if len(detects) > len(most):
         most = detects
         best = coords
 
-print("Best station is at {} with {} asteroids detected".format(best, most))
+print("Best station is at {} with {} asteroids detected".format(best, len(most)))
+
+from math import atan2,pi,degrees
+angles = []
+for (row, col) in most:
+    angles.append( ( (degrees(atan2(row, col)) + 90) % 360, (row, col) ) )
+
+angles.sort()
+
+print(sm)
+print("{} asteroids!".format(sm.count_asteroids()))
+
+print("Vaporizing...")
+counter = 0
+while sm.count_asteroids():
+    for record in angles:
+        # Convert the slope back into an asteroid location
+        dist = 0
+        found = False
+        while not found:
+            dist += 1
+            row = best[0] + record[1][0] * dist
+            col = best[1] + record[1][1] * dist
+            if row < 0 or col < 0 or row >= sm.get_rows() or col >= sm.get_cols():
+                break
+            if sm.at(row, col) == '#':
+                found = True
+        if found:
+            counter += 1
+            sm.set(row, col, '.')
+            if debug:
+                print("{:03d}: {},{}".format(counter, col, row))
+                print()
+                print(sm)
+                print("{} asteroids left".format(sm.count_asteroids()))
+        if counter == 200:
+            print("Part 2: {}".format(col * 100 + row))
