@@ -1,0 +1,74 @@
+#!/usr/bin/python
+
+import sys
+from fractions import gcd
+
+class SpaceMap:
+    def __init__(self, filename):
+        self.space = []
+        line_num = 0
+        for line in open(filename).readlines():
+            self.space.append(list(line.strip()))
+            assert len(self.space[0]) == len(self.space[line_num])
+            line_num += 1
+
+    def at(self, row, col):
+        return self.space[row][col]
+
+    def set(self, row, col, val):
+        self.space[row][col] = val
+
+    def get_rows(self):
+        return len(self.space)
+
+    def get_cols(self):
+        return len(self.space[0])
+
+    def __str__(self):
+        return "\n".join(map(lambda l: ''.join(l), self.space))
+
+sm = SpaceMap(sys.argv[1])
+
+candidates = []
+for station_row in xrange(sm.get_rows()):
+    for station_col in xrange(sm.get_cols()):
+        # Can't install a station on empty space
+        if sm.at(station_row, station_col) == '.':
+            continue
+
+        detects = set()
+        for asteroid_row in xrange(sm.get_rows()):
+            for asteroid_col in xrange(sm.get_cols()):
+                spot = sm.at(asteroid_row, asteroid_col)
+                if spot == '.':
+                    # only pay attention to asteroids
+                    continue
+                elif station_row == asteroid_row and station_col == asteroid_col:
+                    # skip the asteroid we're on
+                    continue
+
+                numer = asteroid_row - station_row
+                denom = asteroid_col - station_col
+                if denom == 0:
+                    detects.add((numer / abs(numer), 0))
+                else:
+                    common = abs(gcd(numer, denom))
+                    detects.add((numer / common, denom / common))
+
+        candidates.append(
+            (
+                (station_col, station_row),
+                len(detects)
+            )
+        )
+
+best = None
+most = 0
+for item in candidates:
+    coords = item[0]
+    detects = item[1]
+    if detects > most:
+        most = detects
+        best = coords
+
+print("Best station is at {} with {} asteroids detected".format(best, most))
