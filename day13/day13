@@ -72,14 +72,30 @@ class Drawer:
             elif self.state == 1:
                 self.y = val
             elif self.state == 2:
+                if self.x == -1 and self.y == 0:
+                    self.score = val
+                    return
                 self.grid.set(self.x, self.y, val)
+                print(self.grid)
             self.state = (self.state + 1) % 3
         return out
+    def get_in_fn(self):
+        def in_fn():
+            return 0
+        return in_fn
 
 grid = SparseGrid()
 drawer = Drawer(grid)
 
 pgm = intcode.load_pgm('input')
-intcode.run_pgm(pgm, None, drawer.get_out_fn())
+intcode.run_pgm(pgm, drawer.get_in_fn(), drawer.get_out_fn())
 print(grid)
 print(str(grid).count('X'))
+
+
+drawer = Drawer(SparseGrid())
+pgm = intcode.load_pgm('input')
+pgm[0] = 2
+print(intcode.run_pgm(pgm, drawer.get_in_fn(), drawer.get_out_fn()))
+print(drawer.grid)
+print(drawer.score)
