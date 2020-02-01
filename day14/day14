@@ -1,0 +1,146 @@
+#!/usr/bin/python3
+# -*- coding: utf8 -*-
+
+import sys
+from math import gcd, ceil
+
+def lcm(a, b):
+    if a == b == 0:
+        return 0
+    return abs(a*b)/gcd(a, b)
+
+class CountedChemical:
+    def __init__(self, count, chemical):
+        self.count = int(count)
+        self.chemical = chemical
+
+    def __str__(self):
+        if self.count == 1:
+            return self.chemical
+        else:
+            return "{}×{}".format(self.count, self.chemical)
+
+    def __repr__(self):
+        return "CountedChemical({}, {})".format(repr(self.count), repr(self.chemical))
+
+class Reaction:
+    def __init__(self, line):
+        def parse_reagent(pair):
+            pair = pair.split(' ')
+            return CountedChemical(int(pair[0]), pair[1])
+
+        begin, end = line.split(' => ')
+
+        self.end = parse_reagent(end)
+
+        self.begin = []
+        for pair in begin.split(', '):
+            self.begin.append(parse_reagent(pair))
+    def __str__(self):
+        return " + ".join(map(str, self.begin)) + ' => ' + str(self.end)
+    def __repr__(self):
+        def reprify_reagent(obj):
+            return "{} {}".format(obj.count, obj.chemical)
+        out = ", ".join(map(reprify_reagent, self.begin)) + ' => ' + reprify_reagent(self.end)
+        return 'Reaction({})'.format(repr(out))
+
+class Stores:
+    def __init__(self):
+        self.stores = {}
+        self.reserved = {}
+    def add(self, counted_chemical):
+        if counted_chemical.chemical in self.stores:
+            self.stores[counted_chemical.chemical].count += counted_chemical.count
+        else:
+            self.reserved[counted_chemical.chemical] = 0
+            self.stores[counted_chemical.chemical] = CountedChemical(counted_chemical.count, counted_chemical.chemical)
+    def get_count(self, chemical):
+        if chemical not in self.stores:
+            return 0
+        else:
+            return self.stores[chemical].count - self.reserved.get(chemical, 0)
+    def reserve(self, chemical, count):
+        assert self.get_count(chemical) >= count
+        self.reserved[chemical] += count
+        assert self.get_count(chemical) >= 0
+    def withdraw(self, counted_chemical):
+        if counted_chemical.chemical not in self.stores:
+            return None
+
+        store_count = self.stores[counted_chemical.chemical].count
+        if store_count == 0:
+            return None
+        elif store_count <= counted_chemical.count:
+            self.reserved[counted_chemical.chemical] -= store_count
+            assert self.reserved[counted_chemical.chemical] == 0
+            return self.stores.pop(counted_chemical.chemical)
+        else:
+            self.reserved[counted_chemical.chemical] -= counted_chemical.count
+            self.stores[counted_chemical.chemical].count -= counted_chemical.count
+            return CountedChemical(counted_chemical.count, counted_chemical.chemical)
+
+class Nanofactory:
+    def __init__(self, filename):
+        self.reactions = []
+        self.tree = {}
+        self.stockpile = Stores()
+        self.ore_consumed = 0
+        self.reaction_count = 0
+        for line in map(lambda s: s.strip(), open(filename).readlines()):
+            reaction = Reaction(line)
+            self.reactions.append(reaction)
+            # Each product only has one possible reaction producing it
+            assert reaction.end.chemical not in self.tree
+            self.tree[reaction.end.chemical] = reaction
+    def add_ore(self, count):
+        self.stockpile.add(CountedChemical(count, 'ORE'))
+    def do_reaction(self, output_chem, output_count=1, indent=0):
+        if output_chem == 'ORE':
+            print("{}Collected {} ORE".format(' '*indent, output_count))
+            self.add_ore(output_count)
+            return
+
+        reaction = self.tree[output_chem]
+        # figure out how often this reaction needs to run
+        out_in_stock = self.stockpile.get_count(output_chem)
+        if out_in_stock:
+            print("{}Stores has {} {} available".format(' '*indent, out_in_stock, output_chem))
+        out_to_make = max(0, output_count - out_in_stock)
+        multiplier = int(ceil(out_to_make / reaction.end.count))
+        if multiplier:
+            print("{}Running '{}' {}x to get {} {}".format(' '*indent, reaction, multiplier, output_count, output_chem))
+            indent+=1
+            for reagent in reaction.begin:
+                print("{}For {}:".format(' '*indent, reagent))
+                amt_in_stock = self.stockpile.get_count(reagent.chemical)
+                if amt_in_stock:
+                    print("{}Stores has {} {} available".format(' '*indent, amt_in_stock, reagent.chemical))
+                amt_required = reagent.count * multiplier
+                amt_to_make = max(amt_required - amt_in_stock, 0)
+                amt_to_take = amt_required - amt_to_make
+                if amt_to_take:
+                    self.stockpile.reserve(reagent.chemical, amt_to_take)
+                if amt_to_make:
+                    self.do_reaction(reagent.chemical, amt_to_make, indent+1)
+                    self.stockpile.reserve(reagent.chemical, amt_to_make)
+
+            for reagent in reaction.begin:
+                chem = self.stockpile.withdraw(CountedChemical(multiplier * reagent.count, reagent.chemical))
+                print("{}Consumed {}".format(' '*indent, chem))
+                if chem.chemical == 'ORE':
+                    self.ore_consumed += chem.count
+
+            self.stockpile.add(CountedChemical(multiplier * reaction.end.count, reaction.end.chemical))
+            self.reaction_count += multiplier
+            indent-=1
+            print("{}Produced {}".format(' '*indent, CountedChemical(multiplier * reaction.end.count, reaction.end.chemical)))
+        else:
+            print("{}{} already in stores".format(' '*indent, CountedChemical(output_count, output_chem)))
+
+nf = Nanofactory(sys.argv[1])
+from pprint import pprint
+pprint(nf.tree)
+
+nf.do_reaction('FUEL')
+print(nf.stockpile.get_count('FUEL'))
+print(nf.ore_consumed)
