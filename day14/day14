@@ -9,6 +9,9 @@ def lcm(a, b):
         return 0
     return abs(a*b)/gcd(a, b)
 
+def dprint(string):
+    sys.stderr.write(string + "\n")
+
 class CountedChemical:
     def __init__(self, count, chemical):
         self.count = int(count)
@@ -96,7 +99,7 @@ class Nanofactory:
         self.stockpile.add(CountedChemical(count, 'ORE'))
     def do_reaction(self, output_chem, output_count=1, indent=0):
         if output_chem == 'ORE':
-            print("{}Collected {} ORE".format(' '*indent, output_count))
+            dprint("{}Collected {} ORE".format(' '*indent, output_count))
             self.add_ore(output_count)
             return
 
@@ -104,17 +107,17 @@ class Nanofactory:
         # figure out how often this reaction needs to run
         out_in_stock = self.stockpile.get_count(output_chem)
         if out_in_stock:
-            print("{}Stores has {} {} available".format(' '*indent, out_in_stock, output_chem))
+            dprint("{}Stores has {} {} available".format(' '*indent, out_in_stock, output_chem))
         out_to_make = max(0, output_count - out_in_stock)
         multiplier = int(ceil(out_to_make / reaction.end.count))
         if multiplier:
-            print("{}Running '{}' {}x to get {} {}".format(' '*indent, reaction, multiplier, output_count, output_chem))
+            dprint("{}Running '{}' {}x to get {} {}".format(' '*indent, reaction, multiplier, output_count, output_chem))
             indent+=1
             for reagent in reaction.begin:
-                print("{}For {}:".format(' '*indent, reagent))
+                dprint("{}For {}:".format(' '*indent, reagent))
                 amt_in_stock = self.stockpile.get_count(reagent.chemical)
                 if amt_in_stock:
-                    print("{}Stores has {} {} available".format(' '*indent, amt_in_stock, reagent.chemical))
+                    dprint("{}Stores has {} {} available".format(' '*indent, amt_in_stock, reagent.chemical))
                 amt_required = reagent.count * multiplier
                 amt_to_make = max(amt_required - amt_in_stock, 0)
                 amt_to_take = amt_required - amt_to_make
@@ -126,16 +129,16 @@ class Nanofactory:
 
             for reagent in reaction.begin:
                 chem = self.stockpile.withdraw(CountedChemical(multiplier * reagent.count, reagent.chemical))
-                print("{}Consumed {}".format(' '*indent, chem))
+                dprint("{}Consumed {}".format(' '*indent, chem))
                 if chem.chemical == 'ORE':
                     self.ore_consumed += chem.count
 
             self.stockpile.add(CountedChemical(multiplier * reaction.end.count, reaction.end.chemical))
             self.reaction_count += multiplier
             indent-=1
-            print("{}Produced {}".format(' '*indent, CountedChemical(multiplier * reaction.end.count, reaction.end.chemical)))
+            dprint("{}Produced {}".format(' '*indent, CountedChemical(multiplier * reaction.end.count, reaction.end.chemical)))
         else:
-            print("{}{} already in stores".format(' '*indent, CountedChemical(output_count, output_chem)))
+            dprint("{}{} already in stores".format(' '*indent, CountedChemical(output_count, output_chem)))
 
 nf = Nanofactory(sys.argv[1])
 from pprint import pprint
