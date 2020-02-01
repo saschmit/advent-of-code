@@ -144,6 +144,20 @@ nf = Nanofactory(sys.argv[1])
 from pprint import pprint
 pprint(nf.tree)
 
-nf.do_reaction('FUEL')
-print(nf.stockpile.get_count('FUEL'))
-print(nf.ore_consumed)
+fuel_request = 1
+nf.do_reaction('FUEL', fuel_request)
+ore_for_1_fuel = nf.ore_consumed
+print("Part 1: ORE consumed = {}".format(ore_for_1_fuel))
+
+
+hold = 1000000000000
+times = 1
+while times:
+    times = (hold - nf.ore_consumed) // ore_for_1_fuel
+    dprint("estimated number of fuel to produce: {}".format(times))
+    fuel_request += times
+    nf.do_reaction('FUEL', fuel_request)
+    dprint("total ORE consumed = {}".format(nf.ore_consumed))
+    dprint("total FUEL = {}".format(nf.stockpile.get_count('FUEL')))
+
+print("Part 2: FUEL produced = {}".format(nf.stockpile.get_count('FUEL')))
