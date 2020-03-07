@@ -1,6 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-from __future__ import print_function
 import intcode
 import sys
 
@@ -42,8 +41,8 @@ class SparseGrid:
 
     def __str__(self):
         out = ""
-        for y in xrange(self.get_height()):
-            for x in xrange(self.get_width()):
+        for y in range(self.get_height()):
+            for x in range(self.get_width()):
                 if self.at(x, y) == TILE_EMPTY:
                     ch = '.'
                 elif self.at(x, y) == TILE_WALL:

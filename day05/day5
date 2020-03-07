@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import intcode
@@ -15,7 +15,7 @@ def fn_out(val):
 
 intcode.run_pgm(program, give(1), fn_out)
 
-for i in xrange(len(buff) - 1):
+for i in range(len(buff) - 1):
     assert buff[i] == 0
 
 diagnostic_code = buff[-1]

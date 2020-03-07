@@ -1,10 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-from __future__ import division
 import sys
 
 def load_pgm(filename):
-    return map(int, open(filename).read().strip().split(','))
+    return list(map(int, open(filename).read().strip().split(',')))
 
 POSITION_MODE = 0
 IMMEDIATE_MODE = 1
@@ -34,7 +33,7 @@ class Memory:
 
 def run_pgm(program, get_input=None, put_output=None):
     memory = Memory()
-    for offset in xrange(len(program)):
+    for offset in range(len(program)):
         memory[offset] = program[offset]
     ip = 0
     base = 0
@@ -102,5 +101,5 @@ def run_pgm(program, get_input=None, put_output=None):
     return memory
 
 if __name__ == '__main__':
-    print(run_pgm(load_pgm(sys.argv[1])))
+    print((run_pgm(load_pgm(sys.argv[1]))))
 

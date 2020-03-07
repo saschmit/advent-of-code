@@ -1,11 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 def is_valid(candidate):
     if len(candidate) != 6:
         return False
 
     double = False
-    for i in xrange(len(candidate)-1):
+    for i in range(len(candidate)-1):
         if candidate[i] > candidate[i+1]:
             return False
         elif candidate[i] == candidate[i+1]:
@@ -19,7 +19,7 @@ def is_valid2(candidate):
 
     repeat = 1
     double = False
-    for i in xrange(len(candidate)-1):
+    for i in range(len(candidate)-1):
         if candidate[i] > candidate[i+1]:
             return False
 
@@ -52,8 +52,8 @@ upper = 585159
 
 count = 0
 count2 = 0
-for n in xrange(lower, upper+1):
-    candidate = map(int, list(str(n)))
+for n in range(lower, upper+1):
+    candidate = list(map(int, list(str(n))))
     if is_valid(candidate):
         count += 1
     if is_valid2(candidate):

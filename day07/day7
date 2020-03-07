@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import intcode
 import subprocess
@@ -52,8 +52,8 @@ best_settings = None
 for settings in permutation([0,1,2,3,4]):
     out_val = 0
     args = [ './amp-seq', ','.join(map(str, pgm)) ]
-    args.extend(map(str, settings))
-    amps = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    args.extend(list(map(str, settings)))
+    amps = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, encoding='utf-8')
     amps.stdin.write('0\n')
     amps.stdin.flush()
     out_val = int(amps.stdout.readline())
@@ -70,8 +70,8 @@ best_settings = None
 for settings in permutation([5,6,7,8,9]):
     out_val = 0
     args = [ './amp-seq', ','.join(map(str, pgm)) ]
-    args.extend(map(str, settings))
-    amps = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    args.extend(list(map(str, settings)))
+    amps = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, encoding='utf-8')
     while amps.returncode is None:
         amps.stdin.write('{}\n'.format(out_val))
         amps.stdin.flush()

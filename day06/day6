@@ -1,34 +1,34 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 
 class Node:
-	def __init__(self, name):
-		self.name = name
-		self.sats = []
-                self.body = None
-                self.depth = 0
-	def add_sat(self, sat):
-		self.sats.append(sat)
-                sat.body = self
-                sat.depth = self.depth + 1
+    def __init__(self, name):
+        self.name = name
+        self.sats = []
+        self.body = None
+        self.depth = 0
+    def add_sat(self, sat):
+        self.sats.append(sat)
+        sat.body = self
+        sat.depth = self.depth + 1
 
 class OrbitMap:
-	def __init__(self):
-		self.nodes = { 'COM': Node('COM') }
-	def add_sat(self, body, sat):
-		if body not in self.nodes:
-			raise KeyError("unknown body '{}'".format(body))
-		if sat in self.nodes:
-			raise RuntimeError("adding sat '{}' I already know about??".format(sat))
-		self.nodes[sat] = Node(sat)
-		self.nodes[body].add_sat(self.nodes[sat])
+    def __init__(self):
+        self.nodes = { 'COM': Node('COM') }
+    def add_sat(self, body, sat):
+        if body not in self.nodes:
+            raise KeyError("unknown body '{}'".format(body))
+        if sat in self.nodes:
+            raise RuntimeError("adding sat '{}' I already know about??".format(sat))
+        self.nodes[sat] = Node(sat)
+        self.nodes[body].add_sat(self.nodes[sat])
 
 uom = OrbitMap()
 queue = []
 
 lines = open(sys.argv[1]).read().strip().split('\n')
-queue = map(lambda line: line.split(')'), lines)
+queue = [line.split(')') for line in lines]
 
 requeue = []
 
@@ -46,7 +46,7 @@ def count_total_orbits(the_map):
         return node.depth + sum(map(count, node.sats))
     return count(the_map.nodes['COM'])
 
-print(count_total_orbits(uom))
+print((count_total_orbits(uom)))
 
 def calc_xfer_dist(src, dst):
     path = []
@@ -61,4 +61,4 @@ def calc_xfer_dist(src, dst):
     return src.depth - node.depth + dst.depth - node.depth
 
 if 'YOU' in uom.nodes and 'SAN' in uom.nodes:
-    print(calc_xfer_dist(uom.nodes['YOU'].body, uom.nodes['SAN'].body))
+    print((calc_xfer_dist(uom.nodes['YOU'].body, uom.nodes['SAN'].body)))

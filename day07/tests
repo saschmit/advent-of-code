@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import intcode
 
@@ -68,7 +68,7 @@ for pgm, correct_settings, correct_result in cases:
     best_settings = None
     for settings in permutation([0,1,2,3,4]):
         out_val = 0
-        for n in xrange(5):
+        for n in range(5):
             in_val = out_val
             buff = []
             intcode.run_pgm(pgm, gen_in_fn(settings[n], in_val), gen_out_fn(buff))

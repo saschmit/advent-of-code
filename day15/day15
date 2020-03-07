@@ -1,6 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-from __future__ import print_function
 import intcode
 import sys
 import time
@@ -55,8 +54,8 @@ class SparseGrid:
 
     def __str__(self):
         out = ""
-        for y in xrange(self.min_y, self.max_y+1):
-            for x in xrange(self.min_x, self.max_x+1):
+        for y in range(self.min_y, self.max_y+1):
+            for x in range(self.min_x, self.max_x+1):
                 out += PIXMAP[self.at(x, y)]
             out += '\n'
         return out.rstrip()

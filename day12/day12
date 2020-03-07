@@ -1,8 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-from __future__ import print_function, division
 import sys
-from fractions import gcd
+from math import gcd
 
 def lcm(a, b):
     return abs(a * b) // gcd(a, b)
@@ -12,7 +11,7 @@ class Position:
         self.pos = list(pos)
 
     def __iadd__(self, other):
-        for axis in xrange(3):
+        for axis in range(3):
             self.pos[axis] += other.vel[axis]
         return self
 
@@ -29,25 +28,25 @@ class Velocity:
 def get_data_from_file(filename):
     data = []
     for line in open(filename).readlines():
-        x, y, z = map(lambda s: int(s[2:]), line[1:-2].split(', '))
+        x, y, z = [int(s[2:]) for s in line[1:-2].split(', ')]
         data.append((x,y,z))
     return data
 
 class Sim:
     def __init__(self, data):
         self.locs = list(map(Position, data))
-        self.vels = [Velocity((0,0,0)) for i in xrange(len(self.locs))]
+        self.vels = [Velocity((0,0,0)) for i in range(len(self.locs))]
         self.t = 0
 
     def step(self):
         # Update velocities by applying gravity
         gravitated = set()
-        for body1 in xrange(len(self.vels)):
-            for body2 in xrange(len(self.vels)):
+        for body1 in range(len(self.vels)):
+            for body2 in range(len(self.vels)):
                 if body1 == body2 or (body2, body1) in gravitated:
                     continue
 
-                for axis in xrange(3):
+                for axis in range(3):
                     if self.locs[body1].pos[axis] == self.locs[body2].pos[axis]:
                         pass
                     elif self.locs[body1].pos[axis] < self.locs[body2].pos[axis]:
@@ -61,7 +60,7 @@ class Sim:
                 gravitated.add((body1,body2))
 
         # Update positions by applying velocities
-        for body in xrange(len(self.vels)):
+        for body in range(len(self.vels)):
             self.locs[body] += self.vels[body]
 
         # Step time by 1
@@ -79,14 +78,14 @@ if __name__ == '__main__':
     sim = Sim(get_data_from_file(sys.argv[1]))
     print(sim)
     steps = int(sys.argv[2])
-    for step in xrange(1, steps + 1):
+    for step in range(1, steps + 1):
         sim.step()
-        if step % (steps / 10) == 0:
+        if step % (steps // 10) == 0:
             print(sim)
 
     # Calculate energy
     totals = 0
-    for body in xrange(len(sim.locs)):
+    for body in range(len(sim.locs)):
         pot = sum(map(abs,sim.locs[body].pos))
         kin = sum(map(abs,sim.vels[body].vel))
         total = pot * kin
@@ -97,7 +96,7 @@ if __name__ == '__main__':
 
     sim0 = Sim(get_data_from_file(sys.argv[1]))
     cycle = []
-    for axis in xrange(3):
+    for axis in range(3):
         sim = Sim(get_data_from_file(sys.argv[1]))
 
         step = 0
@@ -105,7 +104,7 @@ if __name__ == '__main__':
             sim.step()
             step += 1
             match = True
-            for body in xrange(len(sim.locs)):
+            for body in range(len(sim.locs)):
                 if sim0.locs[body].pos[axis] != sim.locs[body].pos[axis] or sim0.vels[body].vel[axis] != sim.vels[body].vel[axis]:
                     match = False
                     break

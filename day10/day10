@@ -1,8 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-from __future__ import print_function
 import sys
-from fractions import gcd
+from math import gcd
 
 debug = False
 
@@ -30,24 +29,24 @@ class SpaceMap:
     def count_asteroids(self):
         return (
             (self.get_rows() * self.get_cols())
-             - sum([ self.space[row].count('.') for row in xrange(self.get_rows()) ])
+             - sum([ self.space[row].count('.') for row in range(self.get_rows()) ])
              - 1)
 
     def __str__(self):
-        return "\n".join(map(lambda l: ''.join(l), self.space))
+        return "\n".join([''.join(l) for l in self.space])
 
 sm = SpaceMap(sys.argv[1])
 
 candidates = []
-for station_row in xrange(sm.get_rows()):
-    for station_col in xrange(sm.get_cols()):
+for station_row in range(sm.get_rows()):
+    for station_col in range(sm.get_cols()):
         # Can't install a station on empty space
         if sm.at(station_row, station_col) == '.':
             continue
 
         detects = set()
-        for asteroid_row in xrange(sm.get_rows()):
-            for asteroid_col in xrange(sm.get_cols()):
+        for asteroid_row in range(sm.get_rows()):
+            for asteroid_col in range(sm.get_cols()):
                 spot = sm.at(asteroid_row, asteroid_col)
                 if spot == '.':
                     # only pay attention to asteroids
@@ -59,10 +58,10 @@ for station_row in xrange(sm.get_rows()):
                 numer = asteroid_row - station_row
                 denom = asteroid_col - station_col
                 if denom == 0:
-                    detects.add((numer / abs(numer), 0))
+                    detects.add((numer // abs(numer), 0))
                 else:
                     common = abs(gcd(numer, denom))
-                    detects.add((numer / common, denom / common))
+                    detects.add((numer // common, denom // common))
 
         candidates.append(
             (
