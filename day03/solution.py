@@ -25,3 +25,15 @@ for part1, part2 in rucksacks:
     part1_sum += decode_priority(common.pop())
 
 print(part1_sum)
+
+part2_sum = 0
+for group in range(len(rucksacks) // 3):
+    rucksack0 = "".join(rucksacks[group * 3])
+    common = set(list(rucksack0))
+    for n in range(1, 3):
+        idx = group * 3 + n
+        common &= set(list("".join(rucksacks[idx])))
+    part2_sum += decode_priority(common.pop())
+
+print(part2_sum)
+
