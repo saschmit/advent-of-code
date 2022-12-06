@@ -40,13 +40,20 @@ for line in open(sys.argv[1]):
         tokens = line.strip().split()
         insns.append(Instruction(tokens))
 
-from pprint import pprint
-
-#pprint([str(insn) for insn in insns])
-
 for insn in insns:
     for n in range(insn.count):
         stacks[insn.dest].append(stacks[insn.start].pop())
 
-pprint(stacks)
 print("Part 1: {}".format("".join([stack[-1] for stack in stacks])))
+
+# Rewind
+for i in range(len(insns)-1, -1, -1):
+    insn = insns[i]
+    for n in range(insn.count):
+        stacks[insn.start].append(stacks[insn.dest].pop())
+
+for insn in insns:
+    stacks[insn.dest].extend(stacks[insn.start][-insn.count:])
+    del stacks[insn.start][-insn.count:]
+
+print("Part 2: {}".format("".join([stack[-1] for stack in stacks])))
