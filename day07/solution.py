@@ -91,3 +91,17 @@ for dirent in all_dirs:
         part1_total += size
 
 print("Part 1: {}".format(part1_total))
+
+total_disk = 70000000
+unused_reqd = 30000000
+
+unused = total_disk - root.size()
+target_rm = unused_reqd - unused
+
+part2_size = total_disk
+for dirent in all_dirs:
+    size = dirent.size()
+    if size >= target_rm and size < part2_size:
+        part2_size = size
+
+print("Part 2: {}".format(part2_size))
