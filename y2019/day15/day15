@@ -1,0 +1,222 @@
+#!/usr/bin/python3
+
+import intcode
+import sys
+import time
+
+TILE_DROID_GOAL = -3
+TILE_DROID = -2
+TILE_UNKNOWN = -1
+TILE_WALL = 0
+TILE_EMPTY = 1
+TILE_OXYGEN_SYS = 2
+TILE_OXYGEN = 3
+
+PIXMAP = {
+    TILE_DROID_GOAL: "!",
+    TILE_DROID: "D",
+    TILE_UNKNOWN: "?",
+    TILE_WALL: "#",
+    TILE_EMPTY: ".",
+    TILE_OXYGEN_SYS: "O",
+    TILE_OXYGEN: "o",
+}
+
+class SparseGrid:
+    def __init__(self):
+        self.grid = {}
+        self.min_x = 0
+        self.min_y = 0
+        self.max_x = 0
+        self.max_y = 0
+
+    def set(self, x, y, tile):
+        self.min_x = min(self.min_x, x)
+        self.min_y = min(self.min_y, y)
+        self.max_x = max(self.max_x, x)
+        self.max_y = max(self.max_y, y)
+        self.grid[(x, y)] = tile
+
+    def at(self, x, y):
+        try:
+            return self.grid[(x, y)]
+        except KeyError:
+            return TILE_UNKNOWN
+
+    def get_height(self):
+        return self.max_y - self.min_y + 1
+
+    def get_width(self):
+        return self.max_x - self.min_x + 1
+
+    def get_cell_count(self):
+        return len(self.grid)
+
+    def __str__(self):
+        out = ""
+        for y in range(self.min_y, self.max_y+1):
+            for x in range(self.min_x, self.max_x+1):
+                out += PIXMAP[self.at(x, y)]
+            out += '\n'
+        return out.rstrip()
+
+def apply_dir(pos, direction):
+    if direction == 1: # N
+        return (pos[0], pos[1] - 1)
+    elif direction == 2: # S
+        return (pos[0], pos[1] + 1)
+    elif direction == 3: # W
+        return (pos[0] - 1, pos[1])
+    elif direction == 4: # E
+        return (pos[0] + 1, pos[1])
+    raise ValueError("Invalid direction {}".format(direction))
+
+class OxygenDroid:
+    def __init__(self, grid):
+        self.grid = grid
+
+        self.x = 0
+        self.y = 0
+        self.dir = None
+        self.stack = [ (0,0) ]
+        self.steps = None
+        self.oxy_pos = None
+        self.iterations = 0 # how many moves do we take, including backtracks & exploration
+    def get_out_fn(self):
+        def out(val):
+            if val == TILE_EMPTY:
+                droid_tile = self.grid.at(self.x, self.y)
+                assert droid_tile in (TILE_DROID, TILE_DROID_GOAL)
+                new_tile = TILE_EMPTY if droid_tile == TILE_DROID else TILE_OXYGEN_SYS
+                if self.dir == 1: # N
+                    self.grid.set(self.x, self.y, new_tile)
+                    self.grid.set(self.x, self.y - 1, TILE_DROID)
+                    self.y -= 1
+                elif self.dir == 2: # S
+                    self.grid.set(self.x, self.y, new_tile)
+                    self.grid.set(self.x, self.y + 1, TILE_DROID)
+                    self.y += 1
+                elif self.dir == 3: # W
+                    self.grid.set(self.x, self.y, new_tile)
+                    self.grid.set(self.x - 1, self.y, TILE_DROID)
+                    self.x -= 1
+                elif self.dir == 4: # E
+                    self.grid.set(self.x, self.y, new_tile)
+                    self.grid.set(self.x + 1, self.y, TILE_DROID)
+                    self.x += 1
+            elif val == TILE_WALL:
+                assert self.grid.at(self.x, self.y) in (TILE_DROID, TILE_DROID_GOAL)
+                if self.dir == 1: # N
+                    self.grid.set(self.x, self.y - 1, TILE_WALL)
+                elif self.dir == 2: # S
+                    self.grid.set(self.x, self.y + 1, TILE_WALL)
+                elif self.dir == 3: # W
+                    self.grid.set(self.x - 1, self.y, TILE_WALL)
+                elif self.dir == 4: # E
+                    self.grid.set(self.x + 1, self.y, TILE_WALL)
+            elif val == TILE_OXYGEN_SYS:
+                assert self.grid.at(self.x, self.y) == TILE_DROID
+                if self.dir == 1: # N
+                    self.grid.set(self.x, self.y, TILE_EMPTY)
+                    self.grid.set(self.x, self.y - 1, TILE_DROID_GOAL)
+                    self.y -= 1
+                elif self.dir == 2: # S
+                    self.grid.set(self.x, self.y, TILE_EMPTY)
+                    self.grid.set(self.x, self.y + 1, TILE_DROID_GOAL)
+                    self.y += 1
+                elif self.dir == 3: # W
+                    self.grid.set(self.x, self.y, TILE_EMPTY)
+                    self.grid.set(self.x - 1, self.y, TILE_DROID_GOAL)
+                    self.x -= 1
+                elif self.dir == 4: # E
+                    self.grid.set(self.x, self.y, TILE_EMPTY)
+                    self.grid.set(self.x + 1, self.y, TILE_DROID_GOAL)
+                    self.x += 1
+
+            # Adjust stack to account for any movement above
+            here = (self.x, self.y)
+            if here != self.stack[-1]:
+                self.stack.append(here)
+
+        return out
+    def get_in_fn(self):
+        def in_fn():
+            self.iterations += 1
+            if self.grid.at(self.x, self.y) == TILE_DROID_GOAL:
+                self.oxy_pos = (self.x, self.y)
+                self.steps = len(self.stack) - 1
+
+            sys.stdout.write("\x1B[2J")
+            print(self.grid)
+            time.sleep(.03125)
+
+            here = self.stack[-1]
+
+            # Find the first direction that we haven't explored yet
+            for direction in (1, 2, 3, 4):
+                pos = apply_dir(here, direction)
+                if TILE_UNKNOWN == self.grid.at(pos[0], pos[1]):
+                    # Record which way we're going
+                    self.dir = direction
+                    # ...and go that way
+                    return direction
+
+            # If we've already explored every direction from here, backtrack
+            self.stack.pop()
+            if len(self.stack) == 0:
+                raise RuntimeError("Fully explored")
+
+            # Figure out which way that is...
+            for direction in (1, 2, 3, 4):
+                pos = apply_dir(here, direction)
+                if self.stack[-1] == pos:
+                    # Record which way we're going
+                    self.dir = direction
+                    # ...and go that way
+                    return direction
+
+            # This shouldn't be possible...
+            assert False
+        return in_fn
+
+grid = SparseGrid()
+grid.set(0,0,TILE_DROID)
+droid = OxygenDroid(grid)
+
+pgm = intcode.load_pgm('input')
+try:
+    intcode.run_pgm(pgm, droid.get_in_fn(), droid.get_out_fn())
+except RuntimeError as rte:
+    pass
+
+#print("Part 1: Oxygen System at ({},{}) with {} steps".format(droid.oxy_pos[0], droid.oxy_pos[1], droid.steps))
+
+queue = [ droid.oxy_pos ]
+next_queue = []
+fill_time = -1
+while queue:
+    fill_time += 1
+    while queue:
+        pos = queue.pop()
+        for direction in (1, 2, 3, 4):
+            new_pos = apply_dir(pos, direction)
+            tile = grid.at(new_pos[0], new_pos[1])
+            if tile in (TILE_OXYGEN_SYS, TILE_OXYGEN, TILE_DROID_GOAL, TILE_WALL):
+                continue
+            elif tile == TILE_DROID:
+                grid.set(new_pos[0], new_pos[1], TILE_DROID_GOAL)
+                next_queue.append(new_pos)
+            elif tile == TILE_EMPTY:
+                grid.set(new_pos[0], new_pos[1], TILE_OXYGEN)
+                next_queue.append(new_pos)
+            elif tile == TILE_UNKNOWN:
+                assert False
+    queue = next_queue
+    next_queue = []
+    sys.stdout.write("\x1B[2J")
+    print(grid)
+    time.sleep(.0625)
+
+print("Part 1: Oxygen System at ({},{}) with {} steps".format(droid.oxy_pos[0], droid.oxy_pos[1], droid.steps))
+print("(with {} total moves)".format(droid.iterations))
+print("Part 2: Area filled with oxygen in {} minutes".format(fill_time))

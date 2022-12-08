@@ -1,0 +1,46 @@
+#!/usr/bin/python3
+
+import sys
+
+def gen_pattern(n):
+    base_pattern = [ 0, 1, 0, -1 ]
+    rep = n + 1
+    pattern = []
+    for val in base_pattern:
+        for i in range(rep):
+            pattern.append(val)
+
+    # handle the shift by 1
+    pattern.append(pattern.pop(0))
+    return pattern
+
+# phase
+def do_phase(phase_in):
+    phase_out = []
+    for n in range(len(phase_in)):
+        pattern = gen_pattern(n)
+        pat_len = len(pattern)
+        total = 0
+        for i in range(len(phase_in)):
+            j = i % pat_len
+            total += phase_in[i] * pattern[j]
+        phase_out.append(abs(total) % 10)
+    return phase_out
+
+digits = []
+
+for digit in open(sys.argv[1]).read():
+    if digit == '\n':
+        break;
+    else:
+        digits.append(int(digit))
+
+#print(digits)
+#print()
+
+stuff = digits
+for phase in range(int(sys.argv[2])):
+    stuff = do_phase(stuff)
+    #print(stuff)
+
+print("".join(map(str, stuff[:8])))

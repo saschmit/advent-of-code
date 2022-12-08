@@ -1,0 +1,31 @@
+start at 26, 12
+26-11+1 left (16 steps) -> 10, 12
+12 up -> 10, 0
+32-10 (22) right -> 32, 0
+
+then a repeating sequence of 5 steps, 31 more times
+0:
+.G_
+...
+
+1:
+.G.
+.._
+
+2:
+.G.
+._.
+
+3:
+.G.
+_..
+
+4:
+_G.
+...
+
+5:
+G_.
+...
+
+thats... 16 + 12 + 22 + 5*31 => 205

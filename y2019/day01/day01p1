@@ -1,0 +1,16 @@
+#!/usr/bin/python3
+
+def fuel_needed(mass):
+    return mass // 3 - 2
+
+assert fuel_needed(12) == 2
+assert fuel_needed(14) == 2
+assert fuel_needed(1969) == 654
+assert fuel_needed(100756) == 33583
+
+total = 0
+for line in open('input').readlines():
+    n = int(line)
+    total += fuel_needed(n)
+
+print(total)

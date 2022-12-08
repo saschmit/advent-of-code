@@ -1,0 +1,6 @@
+#!/bin/bash
+
+pgm=$1
+shift
+
+./amp "$pgm" $1 | ./amp "$pgm" $2 | ./amp "$pgm" $3 | ./amp "$pgm" $4 | ./amp "$pgm" $5

@@ -1,0 +1,18 @@
+#!/usr/bin/python3
+
+import intcode
+
+pgm = intcode.load_pgm('input')
+
+def get():
+    return 1
+
+def put(val):
+    print(val)
+
+intcode.run_pgm(pgm, get, put)
+
+def get2():
+    return 2
+
+intcode.run_pgm(pgm, get2, put)

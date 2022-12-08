@@ -1,0 +1,118 @@
+#!/usr/bin/python3
+
+import sys
+from math import gcd
+
+debug = False
+
+class SpaceMap:
+    def __init__(self, filename):
+        self.space = []
+        line_num = 0
+        for line in open(filename).readlines():
+            self.space.append(list(line.strip()))
+            assert len(self.space[0]) == len(self.space[line_num])
+            line_num += 1
+
+    def at(self, row, col):
+        return self.space[row][col]
+
+    def set(self, row, col, val):
+        self.space[row][col] = val
+
+    def get_rows(self):
+        return len(self.space)
+
+    def get_cols(self):
+        return len(self.space[0])
+
+    def count_asteroids(self):
+        return (
+            (self.get_rows() * self.get_cols())
+             - sum([ self.space[row].count('.') for row in range(self.get_rows()) ])
+             - 1)
+
+    def __str__(self):
+        return "\n".join([''.join(l) for l in self.space])
+
+sm = SpaceMap(sys.argv[1])
+
+candidates = []
+for station_row in range(sm.get_rows()):
+    for station_col in range(sm.get_cols()):
+        # Can't install a station on empty space
+        if sm.at(station_row, station_col) == '.':
+            continue
+
+        detects = set()
+        for asteroid_row in range(sm.get_rows()):
+            for asteroid_col in range(sm.get_cols()):
+                spot = sm.at(asteroid_row, asteroid_col)
+                if spot == '.':
+                    # only pay attention to asteroids
+                    continue
+                elif station_row == asteroid_row and station_col == asteroid_col:
+                    # skip the asteroid we're on
+                    continue
+
+                numer = asteroid_row - station_row
+                denom = asteroid_col - station_col
+                if denom == 0:
+                    detects.add((numer // abs(numer), 0))
+                else:
+                    common = abs(gcd(numer, denom))
+                    detects.add((numer // common, denom // common))
+
+        candidates.append(
+            (
+                (station_row, station_col),
+                detects
+            )
+        )
+
+best = None
+most = set()
+for item in candidates:
+    coords = item[0]
+    detects = item[1]
+    if len(detects) > len(most):
+        most = detects
+        best = coords
+
+print("Best station is at {} with {} asteroids detected".format(best, len(most)))
+
+from math import atan2,pi,degrees
+angles = []
+for (row, col) in most:
+    angles.append( ( (degrees(atan2(row, col)) + 90) % 360, (row, col) ) )
+
+angles.sort()
+
+print(sm)
+print("{} asteroids!".format(sm.count_asteroids()))
+
+print("Vaporizing...")
+counter = 0
+while sm.count_asteroids():
+    for record in angles:
+        # Convert the slope back into an asteroid location
+        dist = 0
+        found = False
+        while not found:
+            dist += 1
+            row = best[0] + record[1][0] * dist
+            col = best[1] + record[1][1] * dist
+            if row < 0 or col < 0 or row >= sm.get_rows() or col >= sm.get_cols():
+                break
+            if sm.at(row, col) == '#':
+                found = True
+        if found:
+            counter += 1
+            sm.set(row, col, '.')
+            if debug:
+                print("{:03d}: {},{}".format(counter, col, row))
+                print()
+                print(sm)
+                print("{} asteroids left".format(sm.count_asteroids()))
+        if counter == 200:
+            print("Part 2: {}".format(col * 100 + row))

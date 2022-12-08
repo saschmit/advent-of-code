@@ -1,0 +1,29 @@
+#!/usr/bin/python3
+
+import intcode
+import sys
+import subprocess
+
+class Innie:
+    def __init__(self, setting):
+        self.setting = setting
+        self.setting_sent = False
+    def in_fn(self):
+        if self.setting_sent:
+            return int(sys.stdin.readline())
+        else:
+            self.setting_sent = True
+            return self.setting
+    def gen_in_fn(self):
+        def in_fn():
+            return self.in_fn()
+        return in_fn
+
+def out_fn(val):
+    print(val)
+    sys.stdout.flush()
+
+pgm = list(map(int, sys.argv[1].split(',')))
+innie = Innie(int(sys.argv[2]))
+
+intcode.run_pgm(pgm, innie.gen_in_fn(), out_fn)

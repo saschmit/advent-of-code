@@ -1,0 +1,100 @@
+#!/usr/bin/python3
+
+import intcode
+import sys
+
+TILE_EMPTY = 0
+TILE_WALL = 1
+TILE_BLOCK = 2
+TILE_PADDLE = 3
+TILE_BALL = 4
+
+class SparseGrid:
+    def __init__(self, part=1):
+        self.grid = {}
+        self.min_x = 0
+        self.min_y = 0
+        self.max_x = 0
+        self.max_y = 0
+
+    def set(self, x, y, tile):
+        self.min_x = min(self.min_x, x)
+        self.min_y = min(self.min_y, y)
+        self.max_x = max(self.max_x, x)
+        self.max_y = max(self.max_y, y)
+        self.grid[(x, y)] = tile
+
+    def at(self, x, y):
+        try:
+            return self.grid[(x, y)]
+        except KeyError:
+            return TILE_EMPTY
+
+    def get_height(self):
+        return self.max_y - self.min_y + 1
+
+    def get_width(self):
+        return self.max_x - self.min_x + 1
+
+    def get_cell_count(self):
+        return len(self.grid)
+
+    def __str__(self):
+        out = ""
+        for y in range(self.get_height()):
+            for x in range(self.get_width()):
+                if self.at(x, y) == TILE_EMPTY:
+                    ch = '.'
+                elif self.at(x, y) == TILE_WALL:
+                    ch = '#'
+                elif self.at(x, y) == TILE_BLOCK:
+                    ch = 'X'
+                elif self.at(x, y) == TILE_PADDLE:
+                    ch = '='
+                elif self.at(x, y) == TILE_BALL:
+                    ch = '*'
+                out += ch
+            out += '\n'
+        return out.rstrip()
+
+class Drawer:
+    def __init__(self, grid):
+        self.grid = grid
+
+        self.state = 0
+        self.x = None
+        self.y = None
+    def get_out_fn(self):
+        def out(val):
+            if self.state == 0:
+                self.x = val
+            elif self.state == 1:
+                self.y = val
+            elif self.state == 2:
+                if self.x == -1 and self.y == 0:
+                    self.score = val
+                    return
+                self.grid.set(self.x, self.y, val)
+                print(self.grid)
+            self.state = (self.state + 1) % 3
+        return out
+    def get_in_fn(self):
+        def in_fn():
+            return 0
+        return in_fn
+
+grid = SparseGrid()
+drawer = Drawer(grid)
+
+pgm = intcode.load_pgm('input')
+intcode.run_pgm(pgm, drawer.get_in_fn(), drawer.get_out_fn())
+print(grid)
+print(str(grid).count('X'))
+
+
+drawer = Drawer(SparseGrid())
+pgm = intcode.load_pgm('input')
+pgm[0] = 2
+print(intcode.run_pgm(pgm, drawer.get_in_fn(), drawer.get_out_fn()))
+print(drawer.grid)
+print(drawer.score)

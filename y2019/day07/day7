@@ -1,0 +1,90 @@
+#!/usr/bin/python3
+
+import intcode
+import subprocess
+
+def gen_in_fn(setting, in_val):
+    buff.append(in_val)
+    buff.append(setting)
+    def in_fn():
+        return buff.pop()
+
+    return in_fn
+
+def gen_out_fn(buff):
+    def out_fn(val):
+        buff.append(val)
+    return out_fn
+
+def permutation(lst): 
+    # If lst is empty then there are no permutations 
+    if len(lst) == 0: 
+        return [] 
+  
+    # If there is only one element in lst then, only 
+    # one permuatation is possible 
+    if len(lst) == 1: 
+        return [lst] 
+  
+    # Find the permutations for lst if there are 
+    # more than 1 characters 
+  
+    l = [] # empty list that will store current permutation 
+  
+    # Iterate the input(lst) and calculate the permutation 
+    for i in range(len(lst)): 
+       m = lst[i] 
+  
+       # Extract lst[i] or m from the list.  remLst is 
+       # remaining list 
+       remLst = lst[:i] + lst[i+1:] 
+  
+       # Generating all permutations where m is first 
+       # element 
+       for p in permutation(remLst): 
+           l.append([m] + p) 
+    return l
+
+pgm = intcode.load_pgm('input')
+
+cur_max = 0
+best_settings = None
+for settings in permutation([0,1,2,3,4]):
+    out_val = 0
+    args = [ './amp-seq', ','.join(map(str, pgm)) ]
+    args.extend(list(map(str, settings)))
+    amps = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, encoding='utf-8')
+    amps.stdin.write('0\n')
+    amps.stdin.flush()
+    out_val = int(amps.stdout.readline())
+    amps.wait()
+
+    if out_val > cur_max:
+        cur_max = out_val
+        best_settings = settings
+
+print(cur_max)
+
+cur_max = 0
+best_settings = None
+for settings in permutation([5,6,7,8,9]):
+    out_val = 0
+    args = [ './amp-seq', ','.join(map(str, pgm)) ]
+    args.extend(list(map(str, settings)))
+    amps = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, encoding='utf-8')
+    while amps.returncode is None:
+        amps.stdin.write('{}\n'.format(out_val))
+        amps.stdin.flush()
+        line = amps.stdout.readline()
+        if not line.strip():
+            amps.wait()
+            break
+        else:
+            out_val = int(line)
+            amps.poll()
+
+    if out_val > cur_max:
+        cur_max = out_val
+        best_settings = settings
+
+print(cur_max)
