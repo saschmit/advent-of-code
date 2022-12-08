@@ -2,17 +2,7 @@
 
 import sys
 
-class Dirent:
-    def __init__(self):
-        pass
-    def size(self):
-        raise NotImplementedError()
-    def type(self):
-        raise NotImplementedError()
-    def disp(self, name, nest):
-        raise NotImplementedError()
-
-class Dir(Dirent):
+class Dir:
     def __init__(self, parent=None):
         self.contents = {}
         self.parent = parent if parent is not None else self
@@ -35,7 +25,7 @@ class Dir(Dirent):
             out += "\n" + ent.disp(name, nest+1)
         return out
 
-class File(Dirent):
+class File:
     def __init__(self, size):
         self._sz = size
     def size(self):
