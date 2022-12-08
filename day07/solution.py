@@ -16,8 +16,6 @@ class Dir:
             return self.parent
         else:
             return self.contents[name]
-    def type(self):
-        return "dir"
     def disp(self, name, nest):
         lpad = '  ' * nest
         out = "{}- {} (dir)".format(lpad, name)
@@ -30,8 +28,6 @@ class File:
         self._sz = size
     def size(self):
         return self._sz
-    def type(self):
-        return "file"
     def disp(self, name, nest):
         lpad = '  ' * nest
         return "{}- {} (file, size={})".format(lpad, name, self.size())
