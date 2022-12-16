@@ -59,3 +59,20 @@ def calc_signal_strength(state, cycle, regs):
 result = run(pgm, calc_signal_strength, 0)
 
 print("Part 1: {}".format(result))
+
+class CRT:
+    def __init__(self):
+        self.crt = [[' ' for i in range(40)] for i in range(6)]
+    def __str__(self):
+        return "\n".join(["".join(self.crt[row]) for row in range(6)])
+
+def render_crt(crt, cycle, regs):
+    row, col = divmod(cycle - 1, 40)
+    x = regs['X']
+    if (col - 1) <= x <= (col + 1):
+        crt.crt[row][col] = '#'
+    return crt
+
+crt = run(pgm, render_crt, CRT())
+print("Part 2:")
+print(crt)
