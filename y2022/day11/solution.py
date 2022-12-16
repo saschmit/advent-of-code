@@ -1,17 +1,20 @@
 #!/usr/bin/python
 
 import sys
+from pprint import pprint
 
-debug = True
+debug = False
 if debug:
     dbg_print = print
+    dbg_pprint = pprint
 else:
     dbg_print = lambda x: None
+    dbg_pprint = lambda x: None
 
 class Item:
     def __init__(self, worry_level):
         self._worry = int(worry_level)
-    def inspect(self, op, arg):
+    def inspect(self, op, arg, reducor):
         if arg == 'old':
             arg = self._worry
 
@@ -24,8 +27,7 @@ class Item:
         else:
             assert False
 
-        self._worry //= 3
-        dbg_print("    Monkey gets bored with item. Worry level is divided by {} to {}.".format(3, self._worry))
+        self._worry = reducor(self._worry)
     def test(self, divisor):
         return self._worry % divisor == 0
 
@@ -66,13 +68,13 @@ class Monkey:
 
         self._inspect_cnt = 0
 
-    def take_turn(self, monkeys):
+    def take_turn(self, monkeys, reducor):
         while True:
             try:
                 item = self._items.pop(0)
                 
                 dbg_print("  Monkey inspects an item with a worry level of {}.".format(item._worry))
-                item.inspect(self._op, self._arg2)
+                item.inspect(self._op, self._arg2, reducor)
                 self._inspect_cnt += 1
 
                 dbg_print("    Current worry level {} divisible by {}.".format("is" if item.test(self._div) else "is not", self._div))
@@ -106,19 +108,22 @@ def load_input(filename):
         
     return monkeys
 
-def play_round(monkeys):
+def play_round(monkeys, reducor):
     for monkey in monkeys:
         dbg_print("Monkey {}".format(monkey._num))
-        monkey.take_turn(monkeys)
+        monkey.take_turn(monkeys, reducor)
 
 monkeys = load_input(sys.argv[1])
-from pprint import pprint
-pprint(monkeys)
+dbg_pprint(monkeys)
+
+def div3(n):
+    dbg_print("    Monkey gets bored with item. Worry level is divided by {} to {}.".format(3, n // 3))
+    return n // 3
 
 for round in range(1, 21):
-    play_round(monkeys)
+    play_round(monkeys, div3)
     dbg_print("After round {}, the monkeys are holding items with these worry levels:".format(round))
-    pprint(monkeys)
+    dbg_pprint(monkeys)
 
 for monkey in monkeys:
     dbg_print("Monkey {} inspected items {} times.".format(monkey._num, monkey.get_count()))
@@ -128,3 +133,21 @@ inspection_rates.sort()
 monkey_business = inspection_rates[-2] * inspection_rates[-1]
 
 print("Part 1: {}".format(monkey_business))
+
+monkeys = load_input(sys.argv[1])
+
+reduction_factor = 1
+for monkey in monkeys:
+    reduction_factor *= monkey._div
+
+for round in range(1, 10001):
+    play_round(monkeys, lambda n: n % reduction_factor)
+    dbg_print("After round {}, the monkeys are holding items with these worry levels:".format(round))
+    if round in [1, 20, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]:
+        dbg_print([monkey.get_count() for monkey in monkeys])
+
+inspection_rates = [monkey.get_count() for monkey in monkeys]
+inspection_rates.sort()
+monkey_business = inspection_rates[-2] * inspection_rates[-1]
+
+print("Part 2: {}".format(monkey_business))
