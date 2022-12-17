@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import sys
+from ast import literal_eval
 
 def compare_packets(left, right):
     if type(left) is not type(right):
@@ -26,8 +27,8 @@ def compare_packets(left, right):
 
 class PacketPair:
     def __init__(self, pair):
-        self.left = eval(pair[0])
-        self.right = eval(pair[1])
+        self.left = literal_eval(pair[0])
+        self.right = literal_eval(pair[1])
     def in_order(self):
         return compare_packets(self.left, self.right) < 0
 
