@@ -82,3 +82,14 @@ def gen_shortest_paths(elmap, end):
 elmap, start, end = load_input(sys.argv[1])
 gen_shortest_paths(elmap, end)
 print("Part 1: {}".format(elmap.get(start).steps))
+
+min_pathlen = elmap.get(start).steps
+for row in range(elmap.height):
+    for col in range(elmap.width):
+        cell = elmap.get((row, col))
+        if cell.elev == 0:
+            if cell.steps is None:
+                continue
+            min_pathlen = min(min_pathlen, cell.steps)
+
+print("Part 2: {}".format(min_pathlen))
