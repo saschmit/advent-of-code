@@ -90,9 +90,10 @@ class GrowableUndergroundMap:
         return out.rstrip()
 
 class SandTracker:
-    def __init__(self, input_data):
+    def __init__(self, input_data, floor=False):
         self.map = GrowableUndergroundMap((500, 0), '.')
         self.map.draw((500, 0), '+')
+        self._floor_lvl = None
 
         rocks = []
         for line in input_data.split('\n'):
@@ -118,14 +119,32 @@ class SandTracker:
         for start, end in rocks:
             draw_rock(self.map, start, end)
 
+        if floor:
+            max_depth = 0
+            leftmost = 1000000
+            rightmost = 0
+            for start, end in rocks:
+                max_depth = max(max_depth, start[1], end[1])
+                leftmost = min(leftmost, start[0], end[0])
+                rightmost = max(rightmost, start[0], end[0])
+
+            self._floor_lvl = max_depth + 2
+            for x in range(leftmost, rightmost+1):
+                self.map.draw((x, self._floor_lvl), '=')
+
     def add_sand(self):
         at_rest = False
         in_abyss = False
+        source_blocked = False
         last = None
-        x, y = 500, 1
+        x, y = 500, 0
         deltas = ( (+0, +1), (-1, +1), (+1, +1) )
         trace = []
-        while not at_rest and not in_abyss:
+        while not at_rest and not in_abyss and not source_blocked:
+            if self.map.get((500,0)) == 'o':
+                source_blocked = True
+                continue
+
             if last == (x, y):
                 dbg_print("grain at rest at {}, replacing {}".format((x,y), self.map.get((x,y))))
                 self.map.draw((x,y), 'o')
@@ -138,6 +157,9 @@ class SandTracker:
             for dx, dy in deltas:
                 dbg_print("applying delta {} to {}".format((dx,dy), (x,y)))
                 cand = (x+dx, y+dy)
+                if self._floor_lvl is not None:
+                    if self.map.get((x+dx, self._floor_lvl)) == self.map.fill:
+                        self.map.draw((x+dx, self._floor_lvl), '=')
                 if cand[1] >= self.map.get_height():
                     dbg_print("{} is below map floor of {} -- to the abyss!".format(cand, self.map.get_height()-1))
                     in_abyss = True
@@ -151,10 +173,10 @@ class SandTracker:
 
         if in_abyss:
             for pos in trace:
-                assert self.map.get(pos) == self.map.fill
+                assert self.map.get(pos) in (self.map.fill, '+')
                 self.map.draw(pos, '~')
 
-        return not in_abyss
+        return not (in_abyss or source_blocked)
 
 set_debug(False)
 st = SandTracker(open(sys.argv[1]).read().rstrip())
@@ -172,3 +194,19 @@ while more_sand:
         dbg_print(st.map)
 
 print("Part 1: {}".format(grains))
+
+st = SandTracker(open(sys.argv[1]).read().rstrip(), True)
+dbg_print(st.map)
+more_sand = True
+grains = 0
+while more_sand:
+    more_sand = st.add_sand()
+    if more_sand:
+        grains += 1
+        dbg_print("Grain {}".format(grains))
+        dbg_print(st.map)
+    else:
+        dbg_print("Final:")
+        dbg_print(st.map)
+
+print("Part 2: {}".format(grains))
