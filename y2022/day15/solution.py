@@ -76,7 +76,7 @@ class SensorGrid:
             self.beacons.append((bx,by))
     def get_sensors(self):
         return self.sensors.keys()
-    def find_row_gaps(self, row):
+    def find_row_coverage(self, row, bounds=None):
         x_ranges = []
         for coord, mdist in self.sensors.items():
             y_dist = abs(coord[1] - row)
@@ -84,7 +84,13 @@ class SensorGrid:
                 x_dist = mdist - y_dist
                 x_min = coord[0] - x_dist
                 x_max = coord[0] + x_dist
-                x_ranges.append((x_min, x_max))
+                x_range = (x_min, x_max)
+                if bounds is None:
+                    x_ranges.append(x_range)
+                elif range_overlap(x_range, bounds):
+                    x_min = max(bounds[0], x_min)
+                    x_max = min(bounds[1], x_max)
+                    x_ranges.append((x_min, x_max))
 
         if not x_ranges:
             return None
@@ -95,12 +101,15 @@ class SensorGrid:
         l = len(x_ranges)
         merged = False
         while i+1 < l:
-            if range_overlap(x_ranges[i], x_ranges[i+1]):
+            if range_overlap(x_ranges[i], x_ranges[i+1]) or range_adjacent(x_ranges[i], x_ranges[i+1]):
                 x_ranges.insert(i, range_union(x_ranges.pop(i), x_ranges.pop(i)))
                 l -= 1
             else:
                 i += 1
 
+        return x_ranges
+
+    def count_part1(self, row, x_ranges):
         row_beacon_xs = set()
         for beacon in self.beacons:
             if beacon[1] == row:
@@ -116,12 +125,28 @@ class SensorGrid:
         return gaps
 
 def range_union(r1, r2):
-    assert range_overlap(r1, r2)
+    assert range_overlap(r1, r2) or range_adjacent(r1, r2)
     return min(r1[0], r2[0]), max(r1[1], r2[1])
 
 def range_overlap(r1, r2):
     return ((r2[0] <= r1[1] and r2[1] >= r1[1]) or
             (r1[0] <= r2[1] and r1[1] >= r2[1]))
+
+def range_adjacent(r1, r2):
+    return r1[1] + 1 == r2[0] or r2[1] + 1 == r1[0]
+
+def range_invert(ranges, bounds):
+    inv = []
+    if bounds[0] < ranges[0][0]:
+        inv.append((bounds[0], ranges[0][0]-1))
+
+    for r in range(1, len(ranges)):
+        inv.append((ranges[r-1][1]+1, ranges[r][0]-1))
+
+    if ranges[-1][1] < bounds[0]:
+        inv.append((ranges[-1][1]+1, bounds[1]))
+
+    return inv
 
 set_debug(False)
 sg = SensorGrid(open(sys.argv[1]).read().rstrip())
@@ -132,6 +157,28 @@ if sys.argv[1] == 'sample':
 else:
     row = 2000000
 
-gaps = sg.find_row_gaps(row)
+gaps = sg.count_part1(row, sg.find_row_coverage(row))
 
 print("Part 1: {}".format(gaps))
+
+if sys.argv[1] == 'sample':
+    upper = 20
+else:
+    upper = 4000000
+
+part2_pos = None
+for row in range(upper):
+    coverage = sg.find_row_coverage(row, (0, upper))
+    if len(coverage) == 0:
+        continue
+
+    if len(coverage) == 1 and coverage[0][0] == 0 and coverage[0][1] == upper:
+        continue
+
+    gaps = range_invert(sg.find_row_coverage(row, (0, upper)), (0, upper))
+    for gap in gaps:
+        if gap[0] == gap[1]:
+            part2_pos = (gap[0], row)
+
+tune_freq = part2_pos[0] * 4000000 + part2_pos[1]
+print("Part 2: {} -> {}".format(part2_pos, tune_freq))
